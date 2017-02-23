@@ -1116,3 +1116,7 @@ function void ListenInput (int listenflag, int curposx, int curposy, int condx_m
 		SetInventory("MadeChoice", 2);
 	}
 }
+
+function str GetResearchImage(int pos) {
+    return Research_Images[pos];
+}

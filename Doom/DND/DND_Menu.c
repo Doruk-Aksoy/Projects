@@ -671,8 +671,9 @@ Script 906 (int type) CLIENTSIDE {
 				DrawToggledImage(SHOP_AMMO_PCAN, 0, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				DrawToggledImage(SHOP_AMMO_METEOR, 1, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				DrawToggledImage(SHOP_AMMO_FUEL, 2, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-				DrawToggledImage(SHOP_AMMO_ION, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-                DrawToggledImage(SHOP_AMMO_LG, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_LG, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_NITROGEN, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_ION, 5, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				
 				if(curposy == MenuListenMax[MENU_SHOP_AMMO3].y) {
 					DrawHelpCornerMessage(MENU_SHOP_AMMO3, curposx, curposy);
@@ -859,7 +860,7 @@ Script 906 (int type) CLIENTSIDE {
 				if(res_state == RES_NA)
 					SetFont("RESNONE");
 				else
-					SetFont(StrParam(s:"RESBAK", d:curposx + 1));
+					SetFont(GetResearchImage(curposx));
 				HudMessage(s:"A"; HUDMSG_PLAIN, RPGMENUITEMID - 14, CR_WHITE, 199.1, 96.0, 0.0, 0.0);
 				
 				SetFont("SMALLFONT");

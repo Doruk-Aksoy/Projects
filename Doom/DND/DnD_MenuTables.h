@@ -139,7 +139,7 @@ struct coord MenuListenMax[MENUMAXPAGES] = {
 			{ 0, 4 }, // slot 8
 			{ 1, 4 }, // shop ammo 1
 			{ 2, 9 }, // shop ammo 2
-            { 2, 5 }, // shop ammo 3
+            { 2, 6 }, // shop ammo 3
 			{ 1, 5 }, // shop ammo special 1
 			{ 0, 11 }, // shop ability
 			{ 0, 10 }, // shop artifact
@@ -224,6 +224,7 @@ enum {
        SHOP_AMMO_METEOR,
        SHOP_AMMO_FUEL,
        SHOP_AMMO_LG,
+       SHOP_AMMO_NITROGEN,
        SHOP_AMMO_ION,
 	   
 	   SHOP_AMMO_FLECHETTE,
@@ -396,14 +397,15 @@ int ShopInfo[MAXSHOPITEMS][2] =
         { 105,      1 },
         { 80,       1 },
         { 90,       1 },
+        { 70,       1 },
         { 150,      1 },
 		
 		// Special Ammunition
 		{ 550,	    1 },
 		{ 900,	    1 },
-		{ 1250,	    1 },
-		{ 1250,     1 },
-		{ 2000,	    1 },
+		{ 1000,	    1 },
+		{ 1000,     1 },
+		{ 1500,	    1 },
 		
 		
 		// Abilities
@@ -474,7 +476,8 @@ str ShopItemNames[MAXSHOPITEMS][4] = {
 										{ "Upgraded Shotgun",					"Purifier",							"P_Slot3Replaced",		"0"  		},
 										{ "Upgraded Shotgun2", 					"Auto Shotgun",						"P_Slot3Replaced",		"0" 		},
 										{ "ResShotgun1",						"Deadlock",							"P_Slot3Replaced",		"0"		    },
-										{ "Upgraded Super Shotgun",			    "Heavy SSG",						"P_Slot3XReplaced",	    "0" 		},
+                                        { "ResShotgun2",                        "Nitrogen Crossbow",                "P_Slot3Replaced",      "0"         },
+                                        { "Upgraded Super Shotgun",			    "Heavy SSG",						"P_Slot3XReplaced",	    "0" 		},
 										{ "Upgraded Super Shotgun2",		    "Erasus",							"P_Slot3XReplaced",	    "0" 		},
 										{ "ResSSG1",							"Plasma Cannon",					"P_Slot3XReplaced",	    "0"		    },
 										{ "Silver Gun",						    "Silver Gun",						"P_Slot3Luxury",		"1"	        },
@@ -530,6 +533,8 @@ str ShopItemNames[MAXSHOPITEMS][4] = {
                                         { "PCanAmmo",                           "Plasma Battery",                   "",                     "0"         },
                                         { "MeteorAmmo",                         "Meteor Sphere",                    "",                     "0"         },
                                         { "Fuel",                               "Fuel Tank"                         "",                     "0"         },
+                                        { "LightningCell",                      "Lightning Cell",                   "",                     "0"         },
+                                        { "NitrogenCanister",                   "Nitrogen Canister",                "",                     "0"         },
                                         { "IonAmmo",                            "Ion Cell",                         "",                     "0"         },
 										
 										{ "FlechetteShell",					    "Flechette Shells",					"",						"0"		    },
@@ -659,6 +664,7 @@ int ItemResearchRequirements[MAXSHOPITEMS][MAX_RESEARCH_REQUIREMENTS] = {
     { RES_SLOT5UPG1, -1, -1 },
     { RES_SLOT6UPG1, -1, -1 },
     { RES_SLOT6UPG2, -1, -1 },
+    { RES_SLOT3UPG1, -1, -1 },
     { RES_SLOT7UPG1, -1, -1 },
 	
 	{ RES_FLECHETTE, -1, -1 },
@@ -875,6 +881,7 @@ str AmmoInfo[MAXSHOPAMMOS][2] = {
                                     { "LAAM1",          "MeteorAmmo"                        },
                                     { "FUAMA0",         "Fuel"                              },
                                     { "D98AB1",         "LightningCell"                     },
+                                    { "D97A1",          "NitrogenCanister"                  },
                                     { "IONAMM1",        "IonAmmo"                           },
 								
 									{ "SAM1A0",			"FlechetteShell"				    },
@@ -905,6 +912,7 @@ int AmmoCounts[MAXSHOPAMMOS] = {
     5,
     30,
     25,
+    8,
     18,
 	
 	8,
@@ -935,6 +943,7 @@ str AmmoExplanation[MAXSHOPAMMOS] = {
                                         "meteors for the\nMeteor Launcher.",
                                         "fuel for the Flame\nThrower.",
                                         "lightning cells for\nthe Lightning Gun.",
+                                        "nitrogen canisters\nfor the Nitrogen Crossbow.",
                                         "ion cells for the Ion\nCannon.",
 										
 										"flechette shells.",
@@ -1024,7 +1033,7 @@ str WeaponExplanation[SHOP_WEP_REAVER + 1] =
 							"Purifier shoots 15 pellets\neach doing 15 damage in a 3.6 by\n3.6 and a shell capacity of 8.",
 							"Killstorm is an automatic\nshotgun, shooting 10 pellets\neach doing 15 damage in a\n7.2 by 5.2 spread. Has a shell\ncapacity of 10.",
 							"Deadlocks fires 16 pellets\ndoing 15 damage in a 4.8 by 3.6\nspread. Has a shell capacity\nof 12. Can use \cialternate\c- ammo.",
-							"Nitrogen Crossbow.",
+							"Fires shots that do 210\nice damage. Alt fire shoots a\nblast of nitrogen 384 units\nahead, creating 4 series of\ngas streams doing 5 damage.",
                             "Heavy Super Shotgun shoots\n24 pellets doing 15 damage in a\n9.6 by 5.8 spread. 8 of these rip\nthrough targets.",
 							"Erasus shotgun shoots highly\nballistic shells with 16 pellets\neach doing 15 damage. Has to\nreload after shooting twice.\nAlt fire shoots both shells\nin the chamber, or reloads.",
 							"Fires 24 plasma balls in a cir-\ncular fashion, each doing\n20 damage. Does irreducable\ndamage. Has a clip size of 5.",
@@ -1238,6 +1247,46 @@ int ResearchCosts[MAX_RESEARCHES] = {
 	140,
 	85,
 	75
+};
+
+str Research_Images[MAX_RESEARCHES] = {
+    "RESBAK1",
+    "RESBAK2",
+    "RESBAK3",
+    "RESBAK4",
+    
+    "RESBAK5"
+    "RESBAK6",
+    "RESBAK7",
+    
+    "RESBAK8",
+    "RESBAK9",
+    
+    "RESBAK10",
+    
+    "RESBAK11",
+    "RESBAK12",
+    "RESBAK13",
+    "RESBAK14",
+    "RESBAK15",
+    "RESBAK16",
+    "RESBAK17",
+    
+    "RESBAK18",
+    "RESBAK19",
+    "RESBAK31",
+    "RESBAK20",
+    "RESBAK21",
+    "RESBAK22",
+    "RESBAK23",
+    "RESBAK24",
+    "RESBAK25",
+    "RESBAK26",
+    
+    "RESBAK27",
+    "RESBAK28",
+    "RESBAK29",
+    "RESBAK30"
 };
 
 str ResearchDescription[MAX_RESEARCHES] = {

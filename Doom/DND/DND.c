@@ -763,6 +763,7 @@ script 916 RESPAWN CLIENTSIDE {
 
 // For each ammo category, use a multiple of 10 to store values
 Script 917 (int ammo_category, int weptype) {
+    // if a change did occur
 	if(HasSpecialAmmoForWeapon(ammo_category) != SpecialAmmoBase[ammo_category]) {
 		SetSpecialAmmoMode(ammo_category, weptype);
 		int pos = GetCurrentWeaponID();

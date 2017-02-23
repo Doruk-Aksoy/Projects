@@ -210,7 +210,8 @@ str WeaponPickupText[MAXWEPS] = {
 									 "The purifier shotgun, spread's with 3.6 by 3.6.\n15 pellets, each doing 15 damage. Has a\nshell capacity of 8. Alt fire reloads.",
 									 "Killstorm Auto Shotgun, drum fed with 10 shells,\ncan shoot 10 pellets each doing 15 damage in a\n7.2 by 5.2 spread. Alt fire reloads.",
 									 "Deadlocks fires 16 pellets doing 15 damage in a 4.8\nby 3.6 spread. Has a shell capacity of 12. Can use\n\cialternate\c- ammo.",
-									 "Same old buckshot we all love! Can be \cdreplaced.",
+									 "Fires shots that do 210 ice damage. Alt fire shoots\na blast of nitrogen 384 units ahead, creating\n4 series of icy gas streams doing 5 damage.",
+                                     "Same old buckshot we all love! Can be \cdreplaced.",
 									 "Heavy Super Shotgun shoots 24 pellets doing 15\ndamage in a 9.6 by 5.8 spread. 8 of these rip\nthrough targets.",
 									 "Erasus shotgun shoots highly ballistic shells\nwith 16 pellets each doing 15 damage. Has to\nreload after shooting twice. Alt fire shoots\nboth shells in the chamber, or reloads.",
 									 "Fires 24 plasma balls in a circular fashion\neach doing 20 damage. Does irreducable\ndamage. Has a clip size of 5.",
@@ -285,7 +286,7 @@ str SpreeText[MAX_SPREE_TEXT] = {
 str SlotWeapons[8][MAXWEPUPGRADES] = {
 	{ " Chainsaw ", "Upgraded Chainsaw", "Sickle", "Excalibat", "" },
 	{ "Magnum", " Akimbo Pistols ", "Laser Pistol", "ResPistol1", "" },
-	{ " Shotgun ", "Upgraded Shotgun", "Upgraded Shotgun2", "ResShotgun1", "" },
+	{ " Shotgun ", "Upgraded Shotgun", "Upgraded Shotgun2", "ResShotgun1", "ResShotgun2" },
 	{ " Super Shotgun ", "Upgraded Super Shotgun", "Upgraded Super Shotgun2", "ResSSG1", "" },
 	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "ResMG1", "" },
 	{ "Rocket Launcher", "Upgraded Rocket Launcher", "Upgraded Rocket Launcher2", "ResRL1", "" },
