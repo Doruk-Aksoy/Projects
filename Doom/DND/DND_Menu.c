@@ -478,11 +478,12 @@ Script 906 (int type) CLIENTSIDE {
 				DrawToggledImage(SHOP_WEP_PURIFIER, 0, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot3Replaced", 1, CR_RED);
 				DrawToggledImage(SHOP_WEP_AUTOSG, 1, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot3Replaced", 1, CR_RED);	
 				DrawToggledImage(SHOP_WEP_RESSG1, 2, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3Replaced", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_HSSG, 3, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot3XReplaced", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_ERASUS, 4, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot3XReplaced", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_RESSSG1, 5, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3XReplaced", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_SILVER, 6, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3Luxury", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_SLAYER, 7, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3Luxury", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_RESSG2, 3, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3Replaced", 1, CR_RED);
+                DrawToggledImage(SHOP_WEP_HSSG, 4, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot3XReplaced", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_ERASUS, 5, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot3XReplaced", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_RESSSG1, 6, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3XReplaced", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_SILVER, 7, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3Luxury", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_SLAYER, 8, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot3Luxury", 1, CR_RED);
 			
 				if(curposy == MenuListenMax[MENU_SHOP_WEAPON3].y) {
 					DrawHelpCornerMessage(MENU_SHOP_WEAPON3, 0, curposy);
@@ -542,8 +543,9 @@ Script 906 (int type) CLIENTSIDE {
 				DrawToggledImage(SHOP_WEP_NUCLEARPL, 0, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot6Replaced", 1, CR_RED);
 				DrawToggledImage(SHOP_WEP_TUREL, 1, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot6Replaced", 1, CR_RED);
 				DrawToggledImage(SHOP_WEP_RESPL1, 2, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot6Replaced", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_NAIL, 3, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot6Luxury", 1, CR_RED);	
-				DrawToggledImage(SHOP_WEP_BASILISK, 4, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot6Luxury", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_RESPL2, 3, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot6Replaced", 1, CR_RED);
+                DrawToggledImage(SHOP_WEP_NAIL, 4, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot6Luxury", 1, CR_RED);	
+				DrawToggledImage(SHOP_WEP_BASILISK, 5, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot6Luxury", 1, CR_RED);
 			
 				if(curposy == MenuListenMax[MENU_SHOP_WEAPON6].y) {
 					DrawHelpCornerMessage(MENU_SHOP_WEAPON6, 0, curposy);
@@ -670,6 +672,7 @@ Script 906 (int type) CLIENTSIDE {
 				DrawToggledImage(SHOP_AMMO_METEOR, 1, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				DrawToggledImage(SHOP_AMMO_FUEL, 2, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				DrawToggledImage(SHOP_AMMO_ION, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_LG, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				
 				if(curposy == MenuListenMax[MENU_SHOP_AMMO3].y) {
 					DrawHelpCornerMessage(MENU_SHOP_AMMO3, curposx, curposy);

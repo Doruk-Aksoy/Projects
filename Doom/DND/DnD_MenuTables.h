@@ -131,22 +131,22 @@ struct coord MenuListenMax[MENUMAXPAGES] = {
 			{ 0, 8 }, // weaps
 			{ 0, 3 }, // slot 1
 			{ 0, 5 }, // slot 2
-			{ 0, 8 }, // slot 3
+			{ 0, 9 }, // slot 3
 			{ 0, 5 }, // slot 4
 			{ 0, 6 }, // slot 5
-			{ 0, 5 }, // slot 6
+			{ 0, 6 }, // slot 6
 			{ 0, 6 }, // slot 7
 			{ 0, 4 }, // slot 8
 			{ 1, 4 }, // shop ammo 1
 			{ 2, 9 }, // shop ammo 2
-            { 2, 4 }, // shop ammo 3
+            { 2, 5 }, // shop ammo 3
 			{ 1, 5 }, // shop ammo special 1
 			{ 0, 11 }, // shop ability
 			{ 0, 10 }, // shop artifact
-			{ 0, 6 }, // shop talent
+			{ 0, 7 }, // shop talent
 			{ 1, 4 }, // shop armor1
 			{ 1, 9 }, // shop armor2
-			{ 27, 1 }, // research menu
+			{ RES_OCCULTARTIFACT, 1 }, // research menu
 			{ 0, 6 }, // main
 			{ 0, 1 }, // help
 			{ 0, 12 } // menu ability help
@@ -166,6 +166,7 @@ enum {
 	   SHOP_WEP_PURIFIER,
 	   SHOP_WEP_AUTOSG,
 	   SHOP_WEP_RESSG1,
+       SHOP_WEP_RESSG2,
 	   SHOP_WEP_HSSG,
 	   SHOP_WEP_ERASUS,
 	   SHOP_WEP_RESSSG1,
@@ -188,6 +189,7 @@ enum {
 	   SHOP_WEP_NUCLEARPL,
 	   SHOP_WEP_TUREL,
 	   SHOP_WEP_RESPL1,
+       SHOP_WEP_RESPL2,
 	   SHOP_WEP_NAIL,
 	   SHOP_WEP_BASILISK,
 	   
@@ -221,6 +223,7 @@ enum {
        SHOP_AMMO_PCAN,
        SHOP_AMMO_METEOR,
        SHOP_AMMO_FUEL,
+       SHOP_AMMO_LG,
        SHOP_AMMO_ION,
 	   
 	   SHOP_AMMO_FLECHETTE,
@@ -247,6 +250,7 @@ enum {
 	   SHOP_TALENTOCCULT,
 	   SHOP_TALENTEXPLOSIVE,
 	   SHOP_TALENTENERGY,
+       SHOP_TALENTELEMENTAL,
 	   
 	   SHOP_ARMOR_GREEN,
 	   SHOP_ARMOR_YELLOW,
@@ -300,7 +304,7 @@ enum {
 #define SHOP_LASTAMMO_SPECIALINDEX SHOP_AMMO_HEGRENADE
 #define SHOP_LASTWEP_INDEX SHOP_WEP_REAVER
 #define SHOP_LASTABILITY_INDEX SHOP_ABILITY_MONSTERINFO
-#define SHOP_LASTTALENT_INDEX SHOP_TALENTENERGY
+#define SHOP_LASTTALENT_INDEX SHOP_TALENTELEMENTAL
 #define SHOP_LASTARMOR_INDEX SHOP_ARMOR_ENERGY
 #define SHOP_LASTARTI_INDEX SHOP_ARTI_RESET
 
@@ -325,6 +329,7 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		{ 4000,  1 },
 		{ 4500,  1 },
 		{ 4350,  1 },
+        { 4500,  1 },
 		{ 5000,  1 },
 		{ 5250,  1 },
 		{ 5500,  1 },
@@ -350,6 +355,7 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		{ 4000,  1 },
 		{ 4500,  1 },
 		{ 4800,  1 },
+        { 5250,  1 },
 		{ 5000,  1 },
 		{ 5500,  1 },
 		
@@ -389,6 +395,7 @@ int ShopInfo[MAXSHOPITEMS][2] =
         { 65,       1 },
         { 105,      1 },
         { 80,       1 },
+        { 90,       1 },
         { 150,      1 },
 		
 		// Special Ammunition
@@ -419,6 +426,7 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		{ 800,	 1 },
 		{ 800,	 1 },
 		{ 800,	 1 },
+        { 800,   1 },
 		
 		// Armor costs
 		{ 4500,	 1 },
@@ -488,7 +496,8 @@ str ShopItemNames[MAXSHOPITEMS][4] = {
 										{ "Upgraded Plasma Rifle",				"Nuclear P. R.",					"P_Slot6Replaced", 		"0"		    },
 										{ "Upgraded Plasma Rifle2",				"Turel Cannon",						"P_Slot6Replaced",		"0"		    },
 										{ "ResPlasma1",							"Flamethrower",						"P_Slot6Replaced",		"0"		    },
-										{ "Nailgun",							"Nailgun",							"P_Slot6Luxury",		"1"	        },
+                                        { "ResPlasma2",                         "Lightning Gun",                    "P_Slot6Replaced",      "0"         },
+                                        { "Nailgun",							"Nailgun",							"P_Slot6Luxury",		"1"	        },
 										{ "Basilisk",							"Basilisk",							"P_Slot6Luxury",		"1"	        },
 										
 										{ "Upgraded BFG 9000",					"BFG 32768",						"P_Slot7Replaced",		"0"		    },
@@ -547,7 +556,8 @@ str ShopItemNames[MAXSHOPITEMS][4] = {
 										{ "Talent_Occult",						"Occult Talent",					"",						"0"		    },
 										{ "Talent_Explosive",					"Explosive Talent",					"",						"0"		    },
 										{ "Talent_Energy",						"Energy Talent",					"",						"0"		    },
-										
+                                        { "Talent_Elemental",                   "Elemental Talent",                 "",                     "0"         },
+                                        
 										{ "NewGreenArmor",						"Green Armor",						"",						"0"		    },
 										{ "YellowArmor",						"Yellow Armor",						"",						"0"		    },
 										{ "NewBlueArmor",					    "Blue Armor",						"",						"0"		    },
@@ -591,6 +601,7 @@ int ItemResearchRequirements[MAXSHOPITEMS][MAX_RESEARCH_REQUIREMENTS] = {
 	{ -1, -1, -1 },
 	{ -1, -1, -1 },
 	{ RES_SLOT3UPG1, -1, -1 },
+    { RES_SLOT3UPG2, -1, -1 },
 	{ -1, -1, -1 },
 	{ -1, -1, -1 },
 	{ RES_SLOT3SSGUPG1, -1, -1 },
@@ -613,6 +624,7 @@ int ItemResearchRequirements[MAXSHOPITEMS][MAX_RESEARCH_REQUIREMENTS] = {
 	{ -1, -1, -1 },
 	{ -1, -1, -1 },
 	{ RES_SLOT6UPG1, -1, -1 },
+    { RES_SLOT6UPG2, -1, -1 },
 	{ RES_SLOT6LUXURY, -1, -1 },
 	{ RES_SLOT6LUXURY, -1, -1 },
 	
@@ -646,6 +658,7 @@ int ItemResearchRequirements[MAXSHOPITEMS][MAX_RESEARCH_REQUIREMENTS] = {
     { RES_SLOT3SSGUPG1, -1, -1 },
     { RES_SLOT5UPG1, -1, -1 },
     { RES_SLOT6UPG1, -1, -1 },
+    { RES_SLOT6UPG2, -1, -1 },
     { RES_SLOT7UPG1, -1, -1 },
 	
 	{ RES_FLECHETTE, -1, -1 },
@@ -836,7 +849,7 @@ str AccessoryExplanation[MAX_ACCESSORY + 1] = {
 												"Soul capacity becomes 150 and ultimate\nweapons do x2.5 damage."
 											  };
 
-#define MAXSHOPAMMOS 22
+#define MAXSHOPAMMOS SHOP_LASTAMMO_SPECIALINDEX - SHOP_FIRSTAMMO_INDEX + 1
 #define AMMO_ICON 0
 #define AMMO_NAME 1	
 #define AMMO_PAGE2_BEGIN SHOP_FIRSTAMMO2_INDEX - SHOP_FIRSTAMMO_INDEX
@@ -861,11 +874,13 @@ str AmmoInfo[MAXSHOPAMMOS][2] = {
                                     { "PCNIC1",         "PCanAmmo"                          },
                                     { "LAAM1",          "MeteorAmmo"                        },
                                     { "FUAMA0",         "Fuel"                              },
+                                    { "D98AB1",         "LightningCell"                     },
                                     { "IONAMM1",        "IonAmmo"                           },
 								
 									{ "SAM1A0",			"FlechetteShell"				    },
 									{ "SAM3A0",			"PiercingShell"						},
 									{ "SAM2A0",			"ElectricShell"						},
+                                    
 									{ "GAM1A0",			"A40MMSonicGrenade"			        },
 									{ "GAM2A0",			"A40MMHEGrenade"				    },
 								};
@@ -889,6 +904,7 @@ int AmmoCounts[MAXSHOPAMMOS] = {
     4,
     5,
     30,
+    25,
     18,
 	
 	8,
@@ -918,11 +934,13 @@ str AmmoExplanation[MAXSHOPAMMOS] = {
                                         "plasma charge for\nthe Plasma Cannon.",
                                         "meteors for the\nMeteor Launcher.",
                                         "fuel for the Flame\nThrower.",
+                                        "lightning cells for\nthe Lightning Gun.",
                                         "ion cells for the Ion\nCannon.",
 										
 										"flechette shells.",
 										"magnum shells.",
 										"electric shells.",
+                                        
 										"sonic grenades.",
 										"high-ex grenades."
 									};
@@ -1006,7 +1024,8 @@ str WeaponExplanation[SHOP_WEP_REAVER + 1] =
 							"Purifier shoots 15 pellets\neach doing 15 damage in a 3.6 by\n3.6 and a shell capacity of 8.",
 							"Killstorm is an automatic\nshotgun, shooting 10 pellets\neach doing 15 damage in a\n7.2 by 5.2 spread. Has a shell\ncapacity of 10.",
 							"Deadlocks fires 16 pellets\ndoing 15 damage in a 4.8 by 3.6\nspread. Has a shell capacity\nof 12. Can use \cialternate\c- ammo.",
-							"Heavy Super Shotgun shoots\n24 pellets doing 15 damage in a\n9.6 by 5.8 spread. 8 of these rip\nthrough targets.",
+							"Nitrogen Crossbow.",
+                            "Heavy Super Shotgun shoots\n24 pellets doing 15 damage in a\n9.6 by 5.8 spread. 8 of these rip\nthrough targets.",
 							"Erasus shotgun shoots highly\nballistic shells with 16 pellets\neach doing 15 damage. Has to\nreload after shooting twice.\nAlt fire shoots both shells\nin the chamber, or reloads.",
 							"Fires 24 plasma balls in a cir-\ncular fashion, each doing\n20 damage. Does irreducable\ndamage. Has a clip size of 5.",
 							"Silver Gun fires 9 pellets each\ndoing 15 on hit. Each pellet also\ndoes 32 - 48 explosion damage\nin a small area. Does self\ndamage. \cfIgnores shields.",
@@ -1025,7 +1044,8 @@ str WeaponExplanation[SHOP_WEP_REAVER + 1] =
 							"Improved with a nuclear react-\nor. Does 36 - 60 on hit and 10 - 30\nexplosion damage in a 48 unit ra-\ndius. Can \cgoverheat\c-. Does self da-\nmage.",
 							"Turel Cannon fires highly ion-\nized particles doing 125 damage\nripping through everything. Cont-\ninuous fire is less accurate and\ndoes 80 damage. Has a range\nof 768 units.",
 							"Flamethrower does what it says\nand throws flames doing 1 - 8\ndamage. When they hit, they leave\na trail of flame doing 5 damage\nevery 2 tics. Fuel size of 75.",
-							"Shoots nails which do 8 - 16\ndamage and rips through. Alt fire\nshoots explosive lava nails that\n\cfignores shields.\c- Can't hit \cughosts.",
+							"UAC offers this shockingly\ndead-ly weapon that can shoot\nlightning doing 11-15 damage. Alt\nfire shoots forked lightning. Keep\nfiring and damage increases by\n4% per stack. Stacks additively.",
+                            "Shoots nails which do 8 - 16\ndamage and rips through. Alt fire\nshoots explosive lava nails that\n\cfignores shields.\c- Can't hit \cughosts.",
 							"Shoots fire balls doing 5 - 40\ndamage. If loaded, shoots meteors\ndoing 60 - 120 on impact and 96\nexplosion damage. \cfIgnores shields.",
 							"The newest BFG model 32768\ndevastates with 600 - 900 damage\non impact and 384 damage in a 160\nunit radius. Shoots 64 tracers.\n\cfIgnores shields.",
 							"Devastator launches three mini\nrockets each doing 32 to 80 with\n32 radius damage in 72 units.\nCan't hit \cughosts.\c- \cfIgnores shields.",
@@ -1070,6 +1090,7 @@ str ShopWeaponTake[SHOP_WEP_REAVER + 1] = {
 								" Shotgun ",
 								" Shotgun ",
 								" Shotgun ",
+                                " Shotgun ",
 								" Super Shotgun ",
 								" Super Shotgun ",
 								" Super Shotgun ",
@@ -1092,6 +1113,7 @@ str ShopWeaponTake[SHOP_WEP_REAVER + 1] = {
 								"Plasma Rifle",
 								"Plasma Rifle",
 								"Plasma Rifle",
+                                "Plasma Rifle",
 								" ",
 								" ",
 								
@@ -1109,12 +1131,13 @@ str ShopWeaponTake[SHOP_WEP_REAVER + 1] = {
 						 };
 						 
 str TalentHelpCornerMessage[MAX_TALENTS] = {
-	"Adds 7.5%\ndamage to\nBullet\nDamage",
-	"Adds 7.5%\ndamage to\nShell\nDamage",
-	"Adds 7.5%\ndamage to\nMelee\nDamage",
-	"Adds 7.5%\ndamage to\nOccult\nDamage",
-	"Adds 7.5%\ndamage to\nExplosive\nDamage",
-	"Adds 7.5%\ndamage to\nEnergy\nDamage"
+	"Adds more\ndamage to\nBullet\nWeapons",
+	"Adds more\ndamage to\nShell\nWeapons",
+	"Adds more\ndamage to\nMelee\nWeapons",
+	"Adds more\ndamage to\nOccult\nWeapons",
+	"Adds more\ndamage to\nExplosive\nWeapons",
+	"Adds more\ndamage to\nEnergy\nWeapons",
+    "Adds more\ndamage to\nElemental\nWeapons"
 };
 
 str TalentTypeNames[MAX_TALENTS] = {
@@ -1123,7 +1146,8 @@ str TalentTypeNames[MAX_TALENTS] = {
 	"melee",
 	"occult",
 	"explosive",
-	"energy"
+	"energy",
+    "elemental"
 };
 
 // this is stupid but oh well
@@ -1133,7 +1157,8 @@ str TalentTypeNamesCapital[MAX_TALENTS] = {
 	"Melee",
 	"Occult",
 	"Explosive",
-	"Energy"
+	"Energy",
+    "Elemental"
 };
 
 int ResearchEntryNumbers[MAX_RESEARCHES] = {
@@ -1161,11 +1186,13 @@ int ResearchEntryNumbers[MAX_RESEARCHES] = {
 	
 	7982,
 	7991,
+    8015,
 	7995,
 	8010,
 	8277,
 	8216,
 	8433,
+    4811,
 	8566,
 	
 	5779,
@@ -1199,10 +1226,12 @@ int ResearchCosts[MAX_RESEARCHES] = {
 	
 	40,
 	45,
+    50,
 	45,
 	50,
 	20,
 	50,
+    55,
 	60,
 	
 	105,
@@ -1234,14 +1263,16 @@ str ResearchDescription[MAX_RESEARCHES] = {
 	"Destorying things has never been\nthis fun! Demons sure know how\nto kill things... Unlocks Nailgun\nand Basilisk.",
 	"If you think your BFG6000 is un-\nderwhelming, try these! Unlocks\nBFG32768, Devastator and\nDestruction Generator.",
 	
-	"Some of the zombies were using\nquite improved versions of your\nweaponry. Now we can utilize\nthe same for your slot 2\nweapons. Unlocks Assault Rifle.",
-	"Through various investments we\ncan now utilize better shotgun\nmechanics. Unlocks Deadlock.",
-	"Our scientists were obsessed\nwith creating energy in fixed\nbursts and now they can! Unlocks\nPlasma Cannon.",
-	"Finally an answer to the un-\ndead menace, this silver bullet\nshooting machine gun will make\nquick work of undeads and magi-\ncal creatures alike! Unlocks\nTemplar MG.",
-	"Using energies of demons we can\nnow create meteors at will and\nso can you! Unlocks Meteor\nLauncher.",
-	"It always occured to us, why\ndon't we have a Grenade Launcher\nwhen we have a Rocket Launcher?\nYeah, now we have both.",
-	"Burning enemies to crisps is\nnever boring! Unlocks Flame\nThrower.",
-	"We have miniguns, laser cannons\nand other various toys but not\nan Ion Cannon... Now we do!",
+	"Some of the zombies were using\nquite improved versions of your\nweaponry. Now we can utilize\nthis for your slot 2 weapons.\nUnlocks Assault Rifle. (2)",
+	"Through various investments we\ncan now utilize better shotgun\nmechanics. Unlocks Deadlock. (3)",
+	"Sometimes it's better to just\ncool things down when things get\nheated up. Unlocks Nitrogen\nCrossbow. (3)",
+    "Our scientists were obsessed\nwith creating energy in fixed\nbursts and now they can! Unlocks\nPlasma Cannon. (3)",
+	"Finally an answer to the un-\ndead menace, this silver bullet\nshooting machine gun will make\nquick work of undeads and magi-\ncal creatures alike! Unlocks\nTemplar MG. (4)",
+	"Using energies of demons we can\nnow create meteors at will and\nso can you! Unlocks Meteor\nLauncher. (5)",
+	"It always occured to us, why\ndon't we have a Grenade Launcher\nwhen we have a Rocket Launcher?\nYeah, now we have both. (5)",
+	"Burning enemies to crisps is\nnever boring! Unlocks Flame\nThrower. (6)",
+	"For when you want to make a\nshocking entrance. Unlocks\nLightning Gun. (6)",
+    "We have miniguns, laser cannons\nand other various toys but not\nan Ion Cannon... Now we do! (7)",
 	
 	"With this groundbreaking rese-\narch, we can now utilize powers\nof the demons to empower our-\nselves! Unlocks certain abilities.",
 	"Powerful demons can teach us\na lot of things. Now we can uti-\nlize their immense power for even\nbetter weapons! Unlocks\nslot 8 weapons.",

@@ -45,11 +45,11 @@ int LogLookup[5] = { 0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000 
 int LevelCurve[MAXLEVELS + 1] = { 100, 218, 392, 566, 740, 914, 1080, 1270, 1430, 1610, 1790, 1990, 2210, 2430, 2890, 3155, 3475, 3680, 3900, 4275, 4665, 4975, 5275, 5515, 5985, 6255, 6685, 7050, 7700, 8800, 10100, 11400, 13000, 14800, 16900, 19300, 21900, 25000, 28400, 32400, 36900, 41900, 48000, 54000, 62000, 71000, 81000, 92000, 104000, 120000, 136000, 154000, 177000, 200000, 229000, 261000, 297000, 338000, 385000, 437000, 500000, 570000, 650000, 730000, 850000, 960000, 1090000, 1240000, 1420000, 1620000, 1840000, 2090000, 2390000, 2720000, 3100000, 3530000, 4010000, 4500000, 5300000, 5900000, 6800000, 7700000, 8800000, 10000000, 11400000, 13000000, 14800000, 16800000, 19200000, 21900000, 24900000, 28400000, 32300000, 36900000, 41500000, 48000000, 54000000, 62000000, 71000000, 80000000, 80000000 };
 
 int settings[4][2] = {
-									{ BT_FORWARD,						0.00 	},
-									{ BT_MOVELEFT | BT_LEFT,		0.25	},
-									{ BT_BACK,							0.50	},
-									{ BT_MOVERIGHT | BT_RIGHT,	0.75	}
-							 };
+                        { BT_FORWARD,					0.00 	},
+                        { BT_MOVELEFT | BT_LEFT,		0.25	},
+                        { BT_BACK,						0.50	},
+                        { BT_MOVERIGHT | BT_RIGHT,	    0.75	}
+};
 
 enum {	
 		RES_STAT_DEX = 1,
@@ -69,14 +69,14 @@ enum {
 		WEAPON_AMMO2,
 		WEAPON_GOT,
 		WEAPON_ICON
-	 };
+};
 	 
 enum {
-			RESET_LEVEL = 1,
-			RESET_CREDIT = 2,
-			RESET_STATS = 4,
-			RESET_PERKS = 8
-		 };
+        RESET_LEVEL = 1,
+        RESET_CREDIT = 2,
+        RESET_STATS = 4,
+        RESET_PERKS = 8
+};
 		 		 
 enum {
 	STAT_STR,
@@ -126,19 +126,26 @@ enum {
 	TALENT_MELEE,
 	TALENT_OCCULT,
 	TALENT_EXPLOSIVE,
-	TALENT_ENERGY
+	TALENT_ENERGY,
+    TALENT_ELEMENTAL
 };
 
-#define MAX_TALENTS TALENT_ENERGY + 1
+#define MAX_TALENTS TALENT_ELEMENTAL + 1
 str TalentNames[MAX_TALENTS] = {
 	"Talent_Bullet",
 	"Talent_Shell",
 	"Talent_Melee",
 	"Talent_Occult",
 	"Talent_Explosive",
-	"Talent_Energy"
+	"Talent_Energy",
+    "Talent_Elemental"
 };
-	
+
+#define MAX_USER_VARIABLES 1
+str Data_Variables[MAX_USER_VARIABLES] = {
+    "P_Damage"
+};
+    
 enum {
 	WEPINFO_NAME,
 	WEPINFO_TAG,
@@ -150,69 +157,73 @@ enum {
 };
 
 str Weapons[MAXWEPS][7] = { 		     
-			 { " Fists ",										"Fist",							"1",		" ",						" ",							"StartOnly",					"FISTICO"				},
-			 { " Chainsaw ",								"Chainsaw",					"1",		" ",						" ",							"GotChainsaw",				"CSAWA0"				},
-			 { "Upgraded Chainsaw",					"Dual Chainsaw",			"1",		" ",						" ",							"GotChainsaw",				"CSW2A0"				},
-			 { "Sickle",										"Necromancer's Sickle", 	"1",		" ",						" ",							"GotChainsaw",				"SICKLICO"  			},
-			 { "Excalibat",									"Excalibat",					"1",		"BatCharge",			"Souls",						"GotChainsaw",				"EBATICO"				},
-			 { " Pistol ",									"Pistol",							"2",		"Clip",					" ",							"StartOnly",					"COLTICO"				},
-			 { " Akimbo Pistols ",						"Dual Pistols",					"2",		"Clip",					" ",							"GotAkimbo",					"AKIMICO"				},
-			 { "Magnum",									"Magnum",						"2",		"Clip",					"BulletSize_6",			"GotMagnum",				"MAGNICO"			},
-			 { "Laser Pistol",								"Laser Pistol",					"2",		"LPistolCharge",		" ",							"GotLaserPistol",				"PBLTZ0" 				},
-			 { "ScatterGun",								"Scatter Pistol",				"2",		"Clip",					" ",							"GotScatterPistol",			"SPPPA0" 				},
-			 { "ResPistol1",								"Assault Rifle",				"2",		"Clip",					"MGClip5",					"GotAR",						"RW00X0"				},
-			 { " Shotgun ",								"Shotgun",						"3",		"Shell",					"ShellSize_8N",			"GotShotgun",				"SGN1ICO"				},
-			 { "Upgraded Shotgun",					"H. Shotgun",					"3",		"Shell",					"ShellSize_8",				"GotShotgun",				"SGP2Z0"				},
-			 { "Upgraded Shotgun2",					"Auto Shotgun",				"3",		"Shell",					"ShellSize_10",			"GotShotgun",				"UASGICO"				},
-			 { "ResShotgun1",							"Deadlock",					"3",		"Shell",					"ShellSize_12",			"GotShotgun",				"RW01X0"				},
-			 { " Super Shotgun ",						"Super Shotgun",			"3",		"Shell",					" ",							"GotSSG",						"SHS1Z0"				},
-			 { "Upgraded Super Shotgun",			"H. S. Shotgun",				"3",		"Shell",					" ",							"GotSSG",						"SSGPA0"				},
-			 { "Upgraded Super Shotgun2",		"Erasus",						"3",		"Shell",					"ShellSize_2",				"GotSSG",						"ERASICO"		   		},
-			 { "ResSSG1",								"Plasma Cannon",			"3",		"PCanAmmo",			"PCanClip",					"GotSSG",						"RW02]0"				},
-			 { "Silver Gun",								"Silver Gun",					"3",		"ExplodingShell",		" ",							"GotSilver",					"EXSGX0"				},
-			 { "Slayer",									"Slayer",						"3",		"SlayerAmmo",		" ",							"GotSlayer",					"SLYPA0"				},
-			 { " Machine gun ", 						"Machine Gun",				"4",		"Clip",					"MGClip",					"GotMG",						"WASGA0"				},
-			 { "Upgraded Machine Gun",			"H. Machine Gun",			"4",		"Clip",					"MGClip2",					"GotMG",						"WSG2ICO" 			},
-			 { "Upgraded Machine Gun2",			"Lead Spitter",				"4",		"Clip",					"MGClip3",					"GotMG",						"QWOPA0"				},
-			 { "ResMG1",									"Templar MG",				"4",		"Clip",					"MGClip4",					"GotMG",						"RW03X0"				},
-			 { " Minigun ",								"Minigun",						"4",		"Clip",					" ",							"GotCG",						"CHNGX0"				},
-			 { "Ebony Cannon",							"Ebony Cannon",				"4",		"EbonyAmmo",		"EbonyAmmoX",			"GotEbony",					"EBONICO"				},
-			 { "Rocket Launcher",						"R. Launcher",				"5",		"RocketAmmo",		" ",							"GotRL",						"LAUNICO"				},
-			 { "Upgraded Rocket Launcher",		"T. Launcher",				"5",		"RocketAmmo",		" ",							"GotRL",						"WPPKG0"				},
-			 { "Upgraded Rocket Launcher2",		"Merc. Launcher",			"5",		"RocketAmmo",		" ",							"GotRL",						"MERCICO"				},
-			 { "ResRL1",									"Meteor Launcher",			"5",		"MeteorAmmo",		" ",							"GotRL",						"RW06X0"				},
-			 { "Grenade Launcher",					"G. Launcher",				"5",		"Grenades",			" ",							"GotGL",						"NGLPA0"				},
-			 { "Upgraded Grenade Launcher",		"Rotary G. Launcher",		"5",		"Grenades",			" ",							"GotGL",						"RTGLICO"				},
-			 { "Heavy Missile Launcher",			"H. M. Launcher",			"5",		"MISAmmo",			" ",							"GotHML",						"WMLNA0"				},
-			 { "Plasma Rifle",							"Plasma Rifle",				"6",		"Cell",					" ",							"GotPL",							"NRAIE0"				},
-			 { "Upgraded Plasma Rifle",				"Nuclear P. Rifle",			"6",		"Cell",					"PlasmaOverheat",		"GotPL",							"QNPLX0"				},
-			 { "Upgraded Plasma Rifle2",			"Turel Cannon", 				"6",		"Cell",					" ",							"GotPL",							"TURLX0"				},
-			 { "ResPlasma1",							"Flamethrower",				"6",		"Fuel",					"FuelClip",					"GotPL",							"RW05X0"				},
-			 { "Nailgun",									"Nail Gun",						"6",		"Nail",					" ",							"GotNail",						"NAIGA0"				},
-			 { "Basilisk",									"Basilisk",						"6",		"BasiliskAmmo",		"LoadedBasilisk",			"GotBasilisk",					"BASICO"				},
-			 { "BFG 9000",								"BFG 6000",					"7",		"Cell",					" ",							"GotBFG",						"PRDCX0"				},
-			 { "Upgraded BFG 9000",					"BFG 32768",					"7",		"Cell",					" ",							"GotBFG",						"DEBFA0"				},
-			 { "Devastator",								"Devastator 5000",			"7",		"Cell",					" ",							"GotBFG", 						"DEVAZ0"				},
-			 { "MFG",										"Destruction Generator",	"7",		"Cell",					" ",							"GotBFG",						"BFGPA0"				},
-			 { "ResBFG1",									"Ion Cannon",					"7",		"IonAmmo",			"IonOverHeat",			"GotBFG",						"RW04X0"				},
-			 { "Gauss Rifle",								"Gauss Rifle",					"7",		"GaussRound",		" ",							"GotBFG",						"GAUSZ0",				},
-			 { "Rail gun",									"Rail Gun",						"7",		"Cell",					" ",							"GotRail",						"WRALA0"				},
-			 { "Death Staff",								"Death Staff",					"8",		"Souls",					"Souls",						"GotDeath",					"LICICO"				},
-			 { "Razorfang",								"Razorfang",					"8",		"Souls",					"Souls",						"GotRazor",					"WRAZA0"				},
-			 { "Sun Staff",								"Sun Staff",					"8",		"Souls",					"Souls",						"GotSun",						"SUNICO"				},
-			 { "Soul Reaver",							"Soul Reaver",				"8",		"Souls",					" ",							"GotReaver",					"REAVICO"				},
-			 { "Sawedoff",								"Sawedoff",					"9",		"SawedoffShell",		"SawedoffCounter",		"GotSawedoff",				"SAWNICO"			},
-			 { "Soul Render",							"Soul Render",				"9",		"BladeCharge",		"BladeHits",				"GotSoul",						"SWOICO"				},
-			 { "SMG",										"SMG",							"9",		"SMGAmmo",			" ",							"GotSMG",						"SMGICO"  			},
-			 { "Hellforge Cannon",						"Hellforge Cannon",			"9",		"IronBalls",				"IronBalls",					"GotHell",						"WHFCA0"  			},
-			 { "Bloodfiend Spine",						"Bloodfiend Spine",			"9",		"BloodAmmo",		"BloodAmmo",			"GotGore",						"WGORA0"  			},
-			 { "Enforcer Rifle",							"Enforcer Rifle",				"9",		"LaserAmmo",		"LaserAmmo",			"GotRifle",						"ENRPA0"  				},
-			 { "Venom",									"Venom",						"9",		"VenomAmmo",		"VenomAmmo",			"GotVenom",					"VENOICO" 			},
-			 { "Demon Heart",							"Demon Heart",				"9",		"HeartAmmo",		" ",							"GotHeart",					"HARTICO" 			},
-			 { "", "", "", "", "", "" },
-			 { "", "", "", "", "", "" },
-			 { "", "", "", "", "", "" },
-			 { "", "", "", "", "", "" },
+			 { " Fists ",							"Fist",						"1",		" ",				" ",							"StartOnly",				"FISTICO"				},
+			 { " Chainsaw ",						"Chainsaw",					"1",		" ",				" ",							"GotChainsaw",				"CSAWA0"				},
+			 { "Upgraded Chainsaw",					"Dual Chainsaw",			"1",		" ",				" ",							"GotChainsaw",				"CSW2A0"				},
+			 { "Sickle",							"Necromancer's Sickle", 	"1",		" ",				" ",							"GotChainsaw",				"SICKLICO"  			},
+			 { "Excalibat",							"Excalibat",				"1",		"BatCharge",		"Souls",						"GotChainsaw",				"EBATICO"				},
+			 { " Pistol ",							"Pistol",					"2",		"Clip",				" ",							"StartOnly",				"COLTICO"				},
+			 { " Akimbo Pistols ",					"Dual Pistols",				"2",		"Clip",				" ",							"GotAkimbo",				"AKIMICO"				},
+			 { "Magnum",							"Magnum",					"2",		"Clip",				"BulletSize_6",			        "GotMagnum",				"MAGNICO"			    },
+			 { "Laser Pistol",						"Laser Pistol",				"2",		"LPistolCharge",	" ",							"GotLaserPistol",			"PBLTZ0" 				},
+			 { "ScatterGun",						"Scatter Pistol",			"2",		"Clip",				" ",							"GotScatterPistol",			"SPPPA0" 				},
+			 { "ResPistol1",						"Assault Rifle",			"2",		"Clip",				"MGClip5",					    "GotAR",					"4AFLA0"				},
+			 { " Shotgun ",							"Shotgun",					"3",		"Shell",			"ShellSize_8N",			        "GotShotgun",				"SGN1ICO"				},
+			 { "Upgraded Shotgun",					"H. Shotgun",				"3",		"Shell",			"ShellSize_8",			    	"GotShotgun",				"SGP2Z0"				},
+			 { "Upgraded Shotgun2",					"Auto Shotgun",				"3",		"Shell",			"ShellSize_10",			        "GotShotgun",				"UASGICO"				},
+			 { "ResShotgun1",						"Deadlock",					"3",		"Shell",			"ShellSize_12",			        "GotShotgun",				"RW01X0"				},
+             { "ResShotgun2",                       "Nitrogen Crossbow",        "3",        "NitrogenCanister", " ",                            "GotShotgun",               "WBOWA0",               },
+             { " Super Shotgun ",					"Super Shotgun",			"3",		"Shell",			" ",							"GotSSG",					"SHS1Z0"				},
+			 { "Upgraded Super Shotgun",			"H. S. Shotgun",			"3",		"Shell",			" ",							"GotSSG",					"SSGPA0"				},
+			 { "Upgraded Super Shotgun2",		    "Erasus",					"3",		"Shell",			"ShellSize_2",			    	"GotSSG",					"ERASICO"		   		},
+			 { "ResSSG1",							"Plasma Cannon",			"3",		"PCanAmmo",			"PCanClip",				    	"GotSSG",					"RW02]0"				},
+			 { "Silver Gun",						"Silver Gun",				"3",		"ExplodingShell",	" ",							"GotSilver",				"EXSGX0"				},
+			 { "Slayer",							"Slayer",					"3",		"SlayerAmmo",		" ",							"GotSlayer",				"SLYPA0"				},
+			 { " Machine gun ", 					"Machine Gun",				"4",		"Clip",				"MGClip",				    	"GotMG",					"WASGA0"				},
+			 { "Upgraded Machine Gun",			    "H. Machine Gun",			"4",		"Clip",				"MGClip2",				    	"GotMG",					"WSG2ICO" 			    },
+			 { "Upgraded Machine Gun2",			    "Lead Spitter",				"4",		"Clip",				"MGClip3",				    	"GotMG",					"QWOPA0"				},
+			 { "ResMG1",							"Templar MG",				"4",		"Clip",				"MGClip4",				    	"GotMG",					"RW03X0"				},
+			 { " Minigun ",							"Minigun",					"4",		"Clip",				" ",							"GotCG",					"CHNGX0"				},
+			 { "Ebony Cannon",						"Ebony Cannon",				"4",		"EbonyAmmo",		"EbonyAmmoX",			        "GotEbony",					"EBONICO"				},
+			 { "Rocket Launcher",					"R. Launcher",				"5",		"RocketAmmo",		" ",							"GotRL",					"LAUNICO"				},
+			 { "Upgraded Rocket Launcher",		    "T. Launcher",				"5",		"RocketAmmo",		" ",							"GotRL",					"WPPKG0"				},
+			 { "Upgraded Rocket Launcher2",		    "Merc. Launcher",			"5",		"RocketAmmo",		" ",							"GotRL",					"MERCICO"				},
+			 { "ResRL1",							"Meteor Launcher",			"5",		"MeteorAmmo",		" ",							"GotRL",					"RW06X0"				},
+			 { "Grenade Launcher",					"G. Launcher",				"5",		"Grenades",			" ",							"GotGL",					"NGLPA0"				},
+			 { "Upgraded Grenade Launcher",		    "Rotary G. Launcher",		"5",		"Grenades",			" ",							"GotGL",					"RTGLICO"				},
+			 { "Heavy Missile Launcher",			"H. M. Launcher",			"5",		"MISAmmo",			" ",							"GotHML",					"WMLNA0"				},
+			 { "Plasma Rifle",						"Plasma Rifle",				"6",		"Cell",				" ",							"GotPL",					"NRAIE0"				},
+			 { "Upgraded Plasma Rifle",				"Nuclear P. Rifle",			"6",		"Cell",				"PlasmaOverheat",		        "GotPL",					"QNPLX0"				},
+			 { "Upgraded Plasma Rifle2",			"Turel Cannon", 			"6",		"Cell",				" ",							"GotPL",					"TURLX0"				},
+			 { "ResPlasma1",						"Flamethrower",				"6",		"Fuel",				"FuelClip",					    "GotPL",					"RW05X0"				},
+             { "ResPlasma2",                        "Lightning Gun",            "6",        "LightningCell",    "LightningStacks",              "GotPL",                    "LTGSA0"                },
+             { "Nailgun",							"Nail Gun",					"6",		"Nail",				" ",							"GotNail",					"NAIGA0"				},
+			 { "Basilisk",							"Basilisk",					"6",		"BasiliskAmmo",		"LoadedBasilisk",			    "GotBasilisk",				"BASICO"				},
+			 { "BFG 9000",							"BFG 6000",					"7",		"Cell",				" ",							"GotBFG",					"PRDCX0"				},
+			 { "Upgraded BFG 9000",					"BFG 32768",				"7",		"Cell",				" ",							"GotBFG",					"DEBFA0"				},
+			 { "Devastator",						"Devastator 5000",			"7",		"Cell",				" ",							"GotBFG", 					"DEVAZ0"				},
+			 { "MFG",								"Destruction Generator",	"7",		"Cell",				" ",							"GotBFG",					"BFGPA0"				},
+			 { "ResBFG1",							"Ion Cannon",				"7",		"IonAmmo",			"IonOverHeat",			        "GotBFG",					"RW04X0"				},
+			 { "Gauss Rifle",						"Gauss Rifle",				"7",		"GaussRound",		" ",							"GotBFG",					"GAUSZ0"				},
+			 { "Rail gun",							"Rail Gun",					"7",		"Cell",				" ",							"GotRail",					"WRALA0"				},
+			 { "Death Staff",						"Death Staff",				"8",		"Souls",			"Souls",						"GotDeath",					"LICICO"				},
+			 { "Razorfang",						    "Razorfang",				"8",		"Souls",			"Souls",						"GotRazor",					"WRAZA0"				},
+			 { "Sun Staff",							"Sun Staff",				"8",		"Souls",			"Souls",						"GotSun",					"SUNICO"				},
+			 { "Soul Reaver",						"Soul Reaver",				"8",		"Souls",			" ",							"GotReaver",				"REAVICO"				},
+			 
+             { "Sawedoff",							"Sawedoff",					"9",		"SawedoffShell",	"SawedoffCounter",		        "GotSawedoff",				"SAWNICO"			    },
+			 { "Soul Render",						"Soul Render",				"9",		"BladeCharge",		"BladeHits",				    "GotSoul",					"SWOICO"			    },
+			 { "SMG",								"SMG",						"9",		"SMGAmmo",			" ",							"GotSMG",					"SMGICO"  			    },
+			 { "Hellforge Cannon",				    "Hellforge Cannon",			"9",		"IronBalls",		"IronBalls",					"GotHell",					"WHFCA0"  			    },
+			 { "Bloodfiend Spine",				    "Bloodfiend Spine",			"9",		"BloodAmmo",		"BloodAmmo",			        "GotGore",					"WGORA0"  			    },
+			 { "Enforcer Rifle",					"Enforcer Rifle",			"9",		"LaserAmmo",		"LaserAmmo",			        "GotRifle",					"ENRPA0"  			    },
+			 { "Venom",								"Venom",					"9",		"VenomAmmo",		"VenomAmmo",			        "GotVenom",					"VENOICO" 			    },
+			 { "Demon Heart",						"Demon Heart",				"9",		"HeartAmmo",		" ",							"GotHeart",					"HARTICO" 			    },
+             { "DarkServantGloves",                 "Dark Servant Gloves",      "9",        "DarkServantEnergy"," ",                            "GotGloves",                "DSGNTICO"              },
+             { "Nailgun2",                          "Heavy Nailgun",            "9",        "BigNail",          " ",                            "GotNailgun2",              "NLCGF0"                },
+             
+             // free slots
+			 
 			 { "", "", "", "", "", "" }
 };
 
@@ -241,11 +252,13 @@ enum {
 	
 	RES_SLOT2UPG1,
 	RES_SLOT3UPG1,
+    RES_SLOT3UPG2,
 	RES_SLOT3SSGUPG1,
 	RES_SLOT4UPG1,
 	RES_SLOT5UPG1,
 	RES_SLOT5GL,
 	RES_SLOT6UPG1,
+    RES_SLOT6UPG2,
 	RES_SLOT7UPG1,
 	
 	RES_OCCULTABILITY,
@@ -281,11 +294,13 @@ str Research_List[MAX_RESEARCHES] = {
 
 	"Slot2Upgrade1",
 	"Slot3Upgrade1",
+    "Slot3Upgrade2",
 	"Slot3SSGUpgrade1",
 	"Slot4Upgrade1",
 	"Slot5Upgrade1",
 	"Slot5GL",
 	"Slot6Upgrade1",
+    "Slot6Upgrade2",
 	"Slot7Upgrade1",
 
 	"OccultAbility",
@@ -319,11 +334,13 @@ str Research_Label[MAX_RESEARCHES] = {
     
     "Assault Rifle (2)",
     "Deadlock Shotgun (3)",
+    "Nitrogen Crossbow (3)",
     "Plasma Cannon (3)",
     "Templar Machine Gun (4)",
     "Meteor Launcher (5)",
     "Grenade Launcher (5)",
     "Flamethrower (6)",
+    "Lightning Gun (6)",
     "Ion Cannon (7)",
     
     "Occult Abilities",

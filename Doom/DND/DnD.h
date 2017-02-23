@@ -1,5 +1,5 @@
 #define MAXUPG 14
-#define MAXTEMPWEPS 8
+#define MAXTEMPWEPS 10
 #define MAXBACKPACK 55 // To reach 600 shells
 #define UNUSEDWEPS 5
 #define TEMPBEGIN (MAXWEPS - MAXTEMPWEPS) - UNUSEDWEPS
@@ -72,7 +72,13 @@
 #define DND_CYBERNETICARMOR_AMOUNT 200
 #define DND_RAVAGERARMOR_AMOUNT 150
 
+#define DND_HEALTHEXPSCALE 5
+#define DND_HEALTHCREDITSCALE 15
+#define DND_HEALTHCREDITUPSCALE 2
+
 #define AGAMOTTO_MOVE_WINDOW 1 << 16
+
+#define TEMP_TID 999999
 
 // RPG ELEMENTS END
 
@@ -102,13 +108,14 @@ enum {
 	AMMO_PCANNON,
 	AMMO_ION,
 	AMMO_FUEL,
-	AMMO_METEOR
+	AMMO_METEOR,
+    AMMO_LIGHTNING
 };
 
-#define MAXAMMOTYPES AMMO_METEOR + 1
+#define MAXAMMOTYPES AMMO_LIGHTNING + 1
 
-str AmmoTypes[MAXAMMOTYPES] = { "Clip",    "Shell",    "RocketAmmo", "Cell",    "Grenades",   "MISAmmo", "Nail",    "ExplodingShell",    "Souls",   "EbonyAmmo", "EbonyAmmoX", "BasiliskAmmo", "GaussRound", "SlayerAmmo", "PCanAmmo", "IonAmmo", "Fuel", "MeteorAmmo" };
-str AmmoMaxes[MAXAMMOTYPES] = { "ClipMax", "ShellMax", "RocketMax",  "CellMax", "GrenadeMax", "MISMax",  "NailMax", "ExplodingShellMax", "SoulMax", "EbonyMax",  "EbonyXMax", "BasiliskMax", "GaussMax", "SlayerMax", "PCanAmmoMax", "IonAmmoMax", "FuelMax", "MeteorMax"  };
+str AmmoTypes[MAXAMMOTYPES] = { "Clip",    "Shell",    "RocketAmmo", "Cell",    "Grenades",   "MISAmmo", "Nail",    "ExplodingShell",    "Souls",   "EbonyAmmo", "EbonyAmmoX", "BasiliskAmmo", "GaussRound", "SlayerAmmo", "PCanAmmo", "IonAmmo", "Fuel", "MeteorAmmo", "LightningCell" };
+str AmmoMaxes[MAXAMMOTYPES] = { "ClipMax", "ShellMax", "RocketMax",  "CellMax", "GrenadeMax", "MISMax",  "NailMax", "ExplodingShellMax", "SoulMax", "EbonyMax",  "EbonyXMax", "BasiliskMax", "GaussMax", "SlayerMax", "PCanAmmoMax", "IonAmmoMax", "FuelMax", "MeteorMax", "LightningCellMax"  };
 
 int InitialCapacity[MAXAMMOTYPES] = { 
 	200, 
@@ -128,7 +135,8 @@ int InitialCapacity[MAXAMMOTYPES] = {
 	35,
 	180,
 	250,
-	40
+	40,
+    375
 };
 
 int CapacityPerBackPack[MAXAMMOTYPES] = {  
@@ -149,28 +157,31 @@ int CapacityPerBackPack[MAXAMMOTYPES] = {
 	7,
 	36,
 	50,
-	8
+	8,
+    75
 };
 
-int BackpackAmounts[MAXAMMOTYPES] =     {  10,  4,  1,  20,  1,  2,   2,  2, 0, 4, 2, 15, 5, 2, 3, 9, 15, 2 };
+int BackpackAmounts[MAXAMMOTYPES] =     {  10,  4,  1,  20,  1,  2,   2,  2, 0, 4, 2, 15, 5, 2, 3, 9, 15, 2, 18 };
 str PickupText[2] = { "\cgPicked up a stimpack", "\cgPicked up a medikit." };
 
 str RailGunTrails[3] = { "RedRayTrail", "YellowRayTrail", "BlueRayTrail" };
 str RailGunDamagers[3] = { "RailDamager_Red", "RailDamager_Yellow", "RailDamager_Blue" };
 
-str TemporaryWeapons[MAXTEMPWEPS] = { "Sawedoff", "Soul Render", "SMG", "Hellforge Cannon", "Bloodfiend Spine", "Enforcer Rifle", "Venom", "Demon Heart" };
-str TemporaryWeaponDrops[MAXTEMPWEPS] = { "SawedoffPickup_D", "SoulRenderPickup_D", "SMGPickup_D", "HellforgePickup_D", "SpinePickup_D", "LaserPickup_D", "VenomPickup_D", "DemonHeartPickup_D" };
-str TemporaryAmmos[MAXTEMPWEPS] = { "SawedoffShell", "BladeHits", "SMGAmmo", "IronBalls", "BloodAmmo", "LaserAmmo", "VenomAmmo", "HeartAmmo" };
+str TemporaryWeapons[MAXTEMPWEPS] = { "Sawedoff", "Soul Render", "SMG", "Hellforge Cannon", "Bloodfiend Spine", "Enforcer Rifle", "Venom", "Demon Heart", "DarkServantGloves", "Nailgun2" };
+str TemporaryWeaponDrops[MAXTEMPWEPS] = { "SawedoffPickup_D", "SoulRenderPickup_D", "SMGPickup_D", "HellforgePickup_D", "SpinePickup_D", "LaserPickup_D", "VenomPickup_D", "DemonHeartPickup_D", "DarkServantGlovesPickup_D", "Nailgun2Pickup_D" };
+str TemporaryAmmos[MAXTEMPWEPS] = { "SawedoffShell", "BladeHits", "SMGAmmo", "IronBalls", "BloodAmmo", "LaserAmmo", "VenomAmmo", "HeartAmmo", "DarkServantEnergy", "BigNail" };
 str TemporaryWeaponMsg[MAXTEMPWEPS] = { 
-																		"\ccWeapon Pickup : \c[Y5]Sawedoff - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Soul Render - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Submachine Gun - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Hellforge Cannon - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Bloodfiend Spine - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Enforcer Laser Rifle - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Venom - 9\c-",
-																		"\ccWeapon Pickup : \c[Y5]Demon Heart - 9\c-"
-																	};
+        "\ccWeapon Pickup : \c[Y5]Sawedoff - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Soul Render - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Submachine Gun - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Hellforge Cannon - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Bloodfiend Spine - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Enforcer Laser Rifle - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Venom - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Demon Heart - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Dark Servant Gloves - 9\c-",
+        "\ccWeapon Pickup : \c[Y5]Heavy Nailgun - 9\c-"
+};
 									  
 str WeaponMsg[7] = 	{  
 						"\ccWeapon Pickup : \c[Y5]Chainsaw - 1\c-",
@@ -222,7 +233,8 @@ str WeaponPickupText[MAXWEPS] = {
 									 "Improved with a nuclear reactor, does 36 - 60 on\nhit and 10 - 30 explosion damage in a 48 unit\nradius. Can \cgoverheat\c-. Does self damage.",
 									 "Turel Cannon fires highly ionized particles\ndoing 125 damage ripping through everything.\nContinuous fire is less accurate and does 80\ndamage. Has a range of 768 units. Altfire\nfires focused shots.",
 									 "Flamethrower does what it says and throws\nflames doing 1 - 8 damage. When they hit, they\nleave a trail of flame doing 5 damage every 2 tics.\nFuel size of 75.",
-									 "An interesting demonic artifact shooting nails.\nEach nail does 8 - 16 damage and rips through.\nAlt fire shoots explosive lava nails that\n\cfignores shields.\c- Can't hit \cughosts.",
+									 "UAC offers this shockingly deadly weapon\nthat can shoot lightning doing 11-15 damage. Alt\nfire shoots forked lightning. Keep firing and da-\nmage increases by 4% per stack. Stacks additively.",
+                                     "An interesting demonic artifact shooting nails.\nEach nail does 8 - 16 damage and rips through.\nAlt fire shoots explosive lava nails that\n\cfignores shields.\c- Can't hit \cughosts.",
 									 "Basilisk is said to be the ancient weapon of\nhell's most elite warriors. If not loaded, shoots\nfire balls doing 5 - 40 damage. If loaded, shoots\nmeteors doing 60 - 120 on impact and 96 explosion\ndamage. \cf Ignores shields.",
 									 "BFG 6000, an older model but still capable.\nCan be \cdreplaced.\cf Ignores shields.",
 									 "The newest BFG model 32768, devastates\nwith 600 / 900 damage on impact and 384\ndamage in a 160 unit radius. Also shoots 64 tracers\ninstead of 40.",
@@ -235,15 +247,18 @@ str WeaponPickupText[MAXWEPS] = {
 									 "This once was the ribcage of a powerful demon.\nFires magical bone shards that rip through.\nAlt fire switches the mode to shoot three\ndemon shredders that seek demons.",
 									 "This holy relic was lost in ancient battles.\nFires sun beams to burn anything. Alt fire\nchannels the very essence of sun causing a\nmassive meltdown. \cfIgnores shields\c-.",
 									 "Soul Reaver creates portals that lead to hungry\nghosts that devour their enemies. Hold to gain\na deflective shield. \cfIgnores shields.",
-									 "The sawedoff is a western classic. Fires 16\npellets each doing 15 damage.\n\ceTemporary Weapon.",
+									 
+                                     "The sawedoff is a western classic. Fires 16\npellets each doing 15 damage.\n\ceTemporary Weapon.",
 									 "Soul Render is an unholy melee weapon.\nEach hit makes the weapon become less durable.\nAlt fire toggles life drain mode.\n\ceTemporary Weapon.",
 									 "A standard UAC submachine gun. Each bullet\ndoes 15 damage.\n\ceTemporary Weapon.",
 									 "The arm-cannon of a Corpulent. Shoots\nmetallic cannon balls that split on impact.\nAlt fire shoots tiny ripping cannon balls.\n\ceTemporary Weapon.",
 									 "The spine of a Bloodfiend. Shoots tiny\nexplosive pukes. Alt fire changes it\nto a limited range hitscan.\n\ceTemporary Weapon.",
 									 "The laser rifle shoots a laser or two, if using alt\nfire, each doing 20-45 damage. \cfIgnores\n\cfshields. \ceTemporary Weapon.",
 									 "The torso of a Vulgar. Shoots acidic bones.\nAlt fire shoots bouncing acid bombs.\nCan't hit \cughosts\c-.\n\ceTemporary Weapon.",
-									 "A demon heart. Squeeze to damage all enemies\n in an area.\cfIgnores shields.\n\ceTemporary Weapon."
-								};							
+									 "A demon heart. Squeeze to damage all enemies\n in an area.\cfIgnores shields.\n\ceTemporary Weapon.",
+                                     "Gloves of a dark servant. Can shoot pain enforcing\nlightning bolts doing 60-90 damage. Alt fire shoots a\nhoming explosive lightning ball doing 120-180\ndamage on hit and 96 area damage over 9 tics.\n\ceTemporary Weapon.",
+                                     "A nail-chaingun, quite useful for mass murder of\ndemons. Shoots nails ripping for 16-32 damage.\n\ceTemporary Weapon.",
+                                };							
 	
 #define MAX_SPREE_TEXT 16
 str SpreeText[MAX_SPREE_TEXT] = {
@@ -274,7 +289,7 @@ str SlotWeapons[8][MAXWEPUPGRADES] = {
 	{ " Super Shotgun ", "Upgraded Super Shotgun", "Upgraded Super Shotgun2", "ResSSG1", "" },
 	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "ResMG1", "" },
 	{ "Rocket Launcher", "Upgraded Rocket Launcher", "Upgraded Rocket Launcher2", "ResRL1", "" },
-	{ "Plasma Rifle", "Upgraded Plasma Rifle", "Upgraded Plasma Rifle2", "ResPlasma1", "" },
+	{ "Plasma Rifle", "Upgraded Plasma Rifle", "Upgraded Plasma Rifle2", "ResPlasma1", "ResPlasma2" },
 	{ "BFG 9000", "Upgraded BFG 9000", "Devastator", "MFG", "ResBFG1" },
 };
 
@@ -707,7 +722,7 @@ int FlagAcceptedValues[MAXFLAGS] = {
 	1
 };
 
-#define MAXDNDFLAGS 37
+#define MAXDNDFLAGS 39
 str DNDFlagCheckList[MAXDNDFLAGS] = {
 	"dnd_monsterbars",
 	"dnd_monsterscale",
@@ -725,6 +740,8 @@ str DNDFlagCheckList[MAXDNDFLAGS] = {
 	"dnd_allresearchesfound",
 	"dnd_disablelevelbonus",
     "dnd_usesmartmonsterspawner",
+    "dnd_healthbasedexp",
+    "dnd_healthbasedcredit",
 	
 	"dnd_shop_scale",
 	"dnd_shop_wep_scale",
@@ -765,6 +782,8 @@ int DNDFlagAcceptedValues[MAXDNDFLAGS] = {
 	1,
 	0,
 	0,
+    1,
+    1,
     1,
 	
 	1,

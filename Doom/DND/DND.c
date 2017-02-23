@@ -348,8 +348,19 @@ Script 830 (int exp, int credit) {
 	int creditshare = GetCVar("dnd_sharecredit");
 	int haswisdom = IsAccessoryEquipped(target, ACC_WISDOM);
 	int hasgreed = IsAccessoryEquipped(target, ACC_GREED);
-	int exptemp = exp;
-	int credtemp = credit;
+    
+    // decide how exp/credit base is calculated
+	int exptemp;
+	int credtemp;
+    if(GetCVar("dnd_healthbasedexp"))
+        exptemp = CheckInventory("MonsterMaxHealth") / DND_HEALTHEXPSCALE;
+    else
+        exptemp = exp;
+    if(GetCVar("dnd_healthbasedcredit"))
+        credtemp = (DND_HEALTHCREDITUPSCALE * CheckInventory("MonsterMaxHealth")) / DND_HEALTHCREDITSCALE;
+    else
+        credtemp = credit;
+    
 	int pnum = 0;
 	int pcount = Clamp_Between(PlayerCount(), 1, DND_MAX_SHARE);
 	int expscale = Clamp_Between(GetCVar("dnd_exp_scale"), 1, EXP_SCALE_MAX);
@@ -547,7 +558,6 @@ Script 832 (void) {
 	StatListOpened[PlayerNumber() + P_TIDSTART] = 0;
 	SetInventory("AttributePoint", statpts);
 	SetInventory("PerkPoint", perkpts);
-	SetActorProperty(0, APROP_SPEED, 1.0);
 }
 
 // Weapon pickup checks, bulkiness armor check and agamotto check
@@ -599,6 +609,16 @@ Script 891 ENTER {
 		
 		Delay(10);
 	}
+}
+
+Script 893 (int mode, int index, int val) {
+    str uvar = Data_Variables[index];
+    int res = 0;
+    if(!mode)
+        SetInventory(uvar, val);
+    else
+        res = CheckInventory(uvar);
+    SetResultValue(res);
 }
 
 // 894 is for database save
@@ -1659,6 +1679,8 @@ Script 994 (int type, int extra)
 	}
     else if(type == 11) // has research?
         res = CheckResearchStatus(extra) == RES_NA;
+    else if(type == 12)
+        res = CheckInventory("LightningStacks");
 	SetResultValue(res);
 }
 

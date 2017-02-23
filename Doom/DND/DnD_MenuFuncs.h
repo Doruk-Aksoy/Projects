@@ -427,7 +427,7 @@ function void DrawHelpCornerImage (int opt, int posx, int posy) {
 		else if(posy == 3)
 			toshow = "SPPPA0";
 		else if(posy == 4)
-			toshow = GetImageWithResearch("RW00X0", "TNT1A0", SHOP_WEP_RESPIS1, RES_KNOWN);
+			toshow = GetImageWithResearch("4AFLA0", "TNT1A0", SHOP_WEP_RESPIS1, RES_KNOWN);
 		else
 			toshow = "TNT1A0";
 	}
@@ -437,16 +437,18 @@ function void DrawHelpCornerImage (int opt, int posx, int posy) {
 		else if(posy == 1)
 			toshow = "UASGICO";
 		else if(posy == 2)
-			toshow =GetImageWithResearch("RW01X0", "TNT1A0", SHOP_WEP_RESSG1, RES_KNOWN);
+			toshow = GetImageWithResearch("RW01X0", "TNT1A0", SHOP_WEP_RESSG1, RES_KNOWN);
 		else if(posy == 3)
-			toshow = "HSSGICO";
+			toshow = GetImageWithResearch("WBOWA0", "TNT1A0", SHOP_WEP_RESSG2, RES_KNOWN);
 		else if(posy == 4)
-			toshow = "ERASICO";
+			toshow = "HSSGICO";
 		else if(posy == 5)
-			toshow = GetImageWithResearch("RW02]0", "TNT1A0", SHOP_WEP_RESSSG1, RES_KNOWN);
+			toshow = "ERASICO";
 		else if(posy == 6)
-			toshow = GetImageWithResearch("EXSGX0", "TNT1A0", SHOP_WEP_SILVER, RES_KNOWN);
+			toshow = GetImageWithResearch("RW02]0", "TNT1A0", SHOP_WEP_RESSSG1, RES_KNOWN);
 		else if(posy == 7)
+			toshow = GetImageWithResearch("EXSGX0", "TNT1A0", SHOP_WEP_SILVER, RES_KNOWN);
+		else if(posy == 8)
 			toshow = GetImageWithResearch("SLYPA0", "TNT1A0", SHOP_WEP_SLAYER, RES_KNOWN);
 		else
 			toshow = "TNT1A0";
@@ -489,8 +491,10 @@ function void DrawHelpCornerImage (int opt, int posx, int posy) {
 		else if(posy == 2)
 			toshow = GetImageWithResearch("RW05X0", "TNT1A0", SHOP_WEP_RESPL1, RES_KNOWN);
 		else if(posy == 3)
-			toshow = GetImageWithResearch("NAIGA0", "TNT1A0", SHOP_WEP_NAIL, RES_KNOWN);
+			toshow = GetImageWithResearch("LTGSA0", "TNT1A0", SHOP_WEP_RESPL2, RES_KNOWN);
 		else if(posy == 4)
+			toshow = GetImageWithResearch("NAIGA0", "TNT1A0", SHOP_WEP_NAIL, RES_KNOWN);
+		else if(posy == 5)
 			toshow = GetImageWithResearch("BASICO", "TNT1A0", SHOP_WEP_BASILISK, RES_KNOWN);
 		else
 			toshow = "TNT1A0";
@@ -913,7 +917,7 @@ function void DrawToggledImage(int itemid, int onposy, int objectflag, int offco
 			else if(objectflag & OBJ_ARTI)
 				HudMessage(s:"* ", s:ArtifactExplanation[curposy]; HUDMSG_PLAIN, RPGMENUITEMID - 40, CR_WHITE, 192.1, 232.1, 0.0, 0.0);
 			else if(objectflag & OBJ_TALENT)
-				HudMessage(s:"* ", s:"Increases damage of ", s:TalentTypeNames[onposy], s:"\nweapons by 7.5%."; HUDMSG_PLAIN, RPGMENUITEMID - 40, CR_WHITE, 192.1, 232.1, 0.0, 0.0);
+				HudMessage(s:"* ", s:"Increases damage of ", s:TalentTypeNames[onposy], s:"\nweapons by \cf", f:DND_TALENT_INCREASE + DND_DEX_GAIN * CheckInventory("PSTAT_Dexterity"), s:"%\c-."; HUDMSG_PLAIN, RPGMENUITEMID - 40, CR_WHITE, 192.1, 232.1, 0.0, 0.0);
 			else if(objectflag & OBJ_ARMOR)
 				HudMessage(s:"* ", s:ArmorExplanation[itemid - SHOP_FIRSTARMOR_INDEX]; HUDMSG_PLAIN, RPGMENUITEMID - 40, CR_WHITE, 192.1, 232.1, 0.0, 0.0);
 			HudMessage(s:weptype, s:"\c[B1]", s:itemtag; HUDMSG_PLAIN, RPGMENUITEMID - 2 * onposy - 1, CR_WHITE, 192.1, 80.0 + 16.0 * onposy, 0.0, 0.0);
