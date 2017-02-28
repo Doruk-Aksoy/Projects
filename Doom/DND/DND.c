@@ -766,9 +766,8 @@ Script 917 (int ammo_category, int weptype) {
     // if a change did occur
 	if(HasSpecialAmmoForWeapon(ammo_category) != SpecialAmmoBase[ammo_category]) {
 		SetSpecialAmmoMode(ammo_category, weptype);
-		int pos = GetCurrentWeaponID();
 		if(ammo_category == AMMO_TYPE_SHELL)
-			SetInventory(Weapons[pos][WEPINFO_AMMO2], 0);
+			SetInventory(Weapons[GetCurrentWeaponID()][WEPINFO_AMMO2], 0);
 		ActivatorSound("AmmoType/Switch", 127);
 		Delay(4);
 	}
@@ -1213,6 +1212,7 @@ Script 978 ENTER {
 				BonusBonus = 1;
 			}
 		}
+        CheckDeadlinessCrit();
 		Delay(15);
 	}
 }
@@ -1682,6 +1682,12 @@ Script 994 (int type, int extra)
         res = CheckResearchStatus(extra) == RES_NA;
     else if(type == 12)
         res = CheckInventory("LightningStacks");
+    else if(type == 13) {
+        // check riotgun mode switch possibility
+        int norm = !!CheckInventory("RiotgunShell"), nitro = !!CheckInventory("NitroShell"), explo = !!CheckInventory("ExplodingShell");
+        // only let switching if more than 1 is available
+        res = (norm & nitro) || (norm & explo) || (nitro & explo);
+    }
 	SetResultValue(res);
 }
 
@@ -1811,7 +1817,7 @@ Script 997 ENTER {
 }
 
 // reload script
-Script 998 (int wepnum, int side) {
+Script 998 (int wepnum, int side, int extra) {
 	int base, amt;
 	str totake;
 	if(!wepnum) {
@@ -1834,8 +1840,20 @@ Script 998 (int wepnum, int side) {
 		totake = "MGClip4";
 	}
 	else if(wepnum == 4) {
-		base = GetAmmoCapacity("MGClip5");
-		totake = "MGClip5";
+        if(side) {
+            int need = GetAmmoCapacity("RiotgunClip") - CheckInventory("RiotgunClip");
+            if(need) {
+                if(CheckInventory(SpecialAmmoNames[extra][SPECIALAMMO_NAME]) >= need)
+                    GiveInventory("RiotgunClip", need);
+                else
+                    SetInventory("RiotgunClip", CheckInventory(SpecialAmmoNames[extra][SPECIALAMMO_NAME]));
+            }
+            Terminate;
+        }
+        else {
+            base = GetAmmoCapacity("MGClip5");
+            totake = "MGClip5";
+        }
 	}
 	
 	amt = base - CheckInventory(totake);

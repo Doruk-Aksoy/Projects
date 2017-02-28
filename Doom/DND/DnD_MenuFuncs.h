@@ -13,6 +13,13 @@ function str CurrentWeapon() {
 	return " ";
 }
 
+function int IsSpecialFixWeapon(int id) {
+    for(int i = 0; i < MAX_SPECIALAMMOFIX_WEAPONS; ++i)
+        if(SpecialAmmoFixWeapons[i][0] == id)
+            return i;
+    return -1;
+}
+
 function int CheckItemRequirements (int req_id, int constraint) {
 	int res = 1;
 	for(int i = 0; i < MAX_RESEARCH_REQUIREMENTS; ++i) {
@@ -103,6 +110,7 @@ function void DeleteTextRange(int r1, int r2) {
 		HudMessage(s:""; HUDMSG_PLAIN, r1 + i, -1, 160.0, 100.0, 0.0, 0.0);
 }
 
+// I seriously need to rewrite this shit...
 function void DrawHelpCornerMessage(int opt, int posx, int posy) {
 	str toshow;
 	if(opt == MENU_STAT1) {
@@ -149,8 +157,11 @@ function void DrawHelpCornerMessage(int opt, int posx, int posy) {
 				toshow = "Increases\nAmmo Ga-\nin by 10%";
 			break;
 			case 6:
-				toshow = "Returns\nto Main\nMenu";
+				toshow = "Gives 2%\nChance to\nCritical\nStrike";
 			break;
+            case 7:
+                toshow = "Returns\nto Main\nMenu";
+            break;
 			default:
 				toshow = "";
 			break;
@@ -461,8 +472,10 @@ function void DrawHelpCornerImage (int opt, int posx, int posy) {
 		else if(posy == 2)
 			toshow = GetImageWithResearch("RW03X0", "TNT1A0", SHOP_WEP_RESMG1, RES_KNOWN);
 		else if(posy == 3)
-			toshow = GetImageWithResearch("CHNGX0", "TNT1A0", SHOP_WEP_MINIGUN, RES_KNOWN);
+			toshow = GetImageWithResearch("RIOTI0", "TNT1A0", SHOP_WEP_RESMG2, RES_KNOWN);
 		else if(posy == 4)
+			toshow = GetImageWithResearch("CHNGX0", "TNT1A0", SHOP_WEP_MINIGUN, RES_KNOWN);
+		else if(posy == 5)
 			toshow = GetImageWithResearch("EBONICO", "TNT1A0", SHOP_WEP_EBONY, RES_KNOWN);
 		else
 			toshow = "TNT1A0";
@@ -542,7 +555,7 @@ function void DrawHelpCornerImage (int opt, int posx, int posy) {
 	}
 	else if(opt == MENU_SHOP_ARMOR2) {
 		if(posy < MenuListenMax[MENU_SHOP_ARMOR2].y)
-			toshow = GetImageWithResearch(ArmorImages[posy + CLASSIC_ARMOR_COUNT], "TNT1A0", ArmorDrawInfo[posy + CLASSIC_ARMOR_COUNT].res_id, RES_KNOWN);
+			toshow = GetImageWithResearch(ArmorImages[posy + PAGE1_ARMOR_COUNT], "TNT1A0", ArmorDrawInfo[posy + PAGE1_ARMOR_COUNT].res_id, RES_KNOWN);
 		else
 			toshow = "TNT1A0";
 	}
@@ -860,7 +873,7 @@ function void DrawToggledImage(int itemid, int onposy, int objectflag, int offco
 			colorprefix = "\c[W3]";
 		}
 		else {
-			// if not ammo or talent
+			// if not ammo, talent or armor
 			if(!(objectflag & (OBJ_AMMO | OBJ_TALENT | OBJ_ARMOR))) {
 				// if not artifact and owning it (basically has weapon)
 				if(!(objectflag & OBJ_ARTI) && CheckInventory(itemname)) {
@@ -889,7 +902,7 @@ function void DrawToggledImage(int itemid, int onposy, int objectflag, int offco
 					colorprefix = "\c[G8]";
 					toshow = "\c[G8]";
 				}
-				else if(!(objectflag & OBJ_AMMO) && CheckInventory(choicename) == choicecount) {
+				else if(!(objectflag & OBJ_AMMO) && CheckInventory(choicename) >= choicecount) {
 					color = choicecolor;
 					colorprefix = "\c[Q2]";
 					toshow = "\c[Q2]";
@@ -958,7 +971,13 @@ function void ProcessTrade (int posy, int low, int high, int tradeflag) {
 						TakeInventory(ShopWeaponTake[itemid], 1);	
 						GiveInventory(ShopItemNames[itemid][SHOPNAME_CONDITION], 1);
 						SetWeapon(ShopItemNames[itemid][SHOPNAME_ITEM]);
-					}
+                        // fix special ammo cursor
+                        int fix = IsSpecialFixWeapon(itemid);
+                        if(fix != -1) {
+                            int weptype = SpecialAmmoFixWeapons[fix][1];
+                            SetInventory(StrParam(s:"SpecialAmmoMode", s:GetSpecialAmmoSuffix(weptype)), SpecialAmmoBase[SpecialAmmoFixWeapons[fix][2]]);
+                        }
+                    }
 					else if(tradeflag & TRADE_AMMO)
 						LocalAmbientSound("items/ammo", 127);
 					else if(tradeflag & (TRADE_ABILITY | TRADE_ARTIFACT | TRADE_TALENT))

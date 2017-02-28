@@ -109,13 +109,15 @@ enum {
 	AMMO_ION,
 	AMMO_FUEL,
 	AMMO_METEOR,
-    AMMO_LIGHTNING
+    AMMO_LIGHTNING,
+    AMMO_NITROGENCANISTER,
+    AMMO_RIOT
 };
 
-#define MAXAMMOTYPES AMMO_LIGHTNING + 1
+#define MAXAMMOTYPES AMMO_RIOT + 1
 
-str AmmoTypes[MAXAMMOTYPES] = { "Clip",    "Shell",    "RocketAmmo", "Cell",    "Grenades",   "MISAmmo", "Nail",    "ExplodingShell",    "Souls",   "EbonyAmmo", "EbonyAmmoX", "BasiliskAmmo", "GaussRound", "SlayerAmmo", "PCanAmmo", "IonAmmo", "Fuel", "MeteorAmmo", "LightningCell" };
-str AmmoMaxes[MAXAMMOTYPES] = { "ClipMax", "ShellMax", "RocketMax",  "CellMax", "GrenadeMax", "MISMax",  "NailMax", "ExplodingShellMax", "SoulMax", "EbonyMax",  "EbonyXMax", "BasiliskMax", "GaussMax", "SlayerMax", "PCanAmmoMax", "IonAmmoMax", "FuelMax", "MeteorMax", "LightningCellMax"  };
+str AmmoTypes[MAXAMMOTYPES] = { "Clip",    "Shell",    "RocketAmmo", "Cell",    "Grenades",   "MISAmmo", "Nail",    "ExplodingShell",    "Souls",   "EbonyAmmo", "EbonyAmmoX", "BasiliskAmmo", "GaussRound", "SlayerAmmo", "PCanAmmo", "IonAmmo", "Fuel", "MeteorAmmo", "LightningCell", "NitrogenCanister", "RiotgunShell" };
+str AmmoMaxes[MAXAMMOTYPES] = { "ClipMax", "ShellMax", "RocketMax",  "CellMax", "GrenadeMax", "MISMax",  "NailMax", "ExplodingShellMax", "SoulMax", "EbonyMax",  "EbonyXMax", "BasiliskMax", "GaussMax", "SlayerMax", "PCanAmmoMax", "IonAmmoMax", "FuelMax", "MeteorMax", "LightningCellMax", "NitrogenCanisterMax", "RiotgunShellMax" };
 
 int InitialCapacity[MAXAMMOTYPES] = { 
 	200, 
@@ -136,7 +138,9 @@ int InitialCapacity[MAXAMMOTYPES] = {
 	180,
 	250,
 	40,
-    375
+    375,
+    40,
+    160
 };
 
 int CapacityPerBackPack[MAXAMMOTYPES] = {  
@@ -158,10 +162,12 @@ int CapacityPerBackPack[MAXAMMOTYPES] = {
 	36,
 	50,
 	8,
-    75
+    75,
+    8,
+    32
 };
 
-int BackpackAmounts[MAXAMMOTYPES] =     {  10,  4,  1,  20,  1,  2,   2,  2, 0, 4, 2, 15, 5, 2, 3, 9, 15, 2, 18 };
+int BackpackAmounts[MAXAMMOTYPES] =     {  10,  4,  1,  20,  1,  2,   2,  2, 0, 4, 2, 15, 5, 2, 3, 9, 15, 2, 18, 2, 8 };
 str PickupText[2] = { "\cgPicked up a stimpack", "\cgPicked up a medikit." };
 
 str RailGunTrails[3] = { "RedRayTrail", "YellowRayTrail", "BlueRayTrail" };
@@ -206,8 +212,8 @@ str WeaponPickupText[MAXWEPS] = {
 									 "Laser Pistol is the fresh invention of UAC. Shoots\nlasers doing 15 - 30 damage in a 2.0 by 1.25 spread.\nsAlt fire charges to do up to a x5 damage rail.\nDoesn't use ammo. \cfIgnores shields.",
 									 "Scatter Pistol shoots 3 pellets each doing\n8 - 16 damage. Pellets scatter to 5 tiny pel-\nlets doing 2- 8 damage. Alt fire shoots one\npellet. \cfIgnores shields.\c- Irreducable damage.",
 									 "Assault Rifle does 18 damage per bullet in a 3.6 by\n2.4 spread. Magazine capacity of 31. Alt fire\nzooms, allowing more precise shots.",
-									 "Typical boomstick, now spreads vertically too.\n9 pellets, each doing 5-10-15 damage.\nCan be \cdreplaced.",
-									 "The purifier shotgun, spread's with 3.6 by 3.6.\n15 pellets, each doing 15 damage. Has a\nshell capacity of 8. Alt fire reloads.",
+									 "Typical boomstick, now spreads vertically too.\n9 pellets, each doing 5-10-15 damage.\nCan be \cdreplaced\c-. Can use \cialternate\c- ammo.",
+									 "The purifier shotgun, spread's with 3.6 by 3.6.\n15 pellets, each doing 15 damage. Has a\nshell capacity of 8. Alt fire reloads. Can use\n\cialternate\c- ammo.",
 									 "Killstorm Auto Shotgun, drum fed with 10 shells,\ncan shoot 10 pellets each doing 15 damage in a\n7.2 by 5.2 spread. Alt fire reloads.",
 									 "Deadlocks fires 16 pellets doing 15 damage in a 4.8\nby 3.6 spread. Has a shell capacity of 12. Can use\n\cialternate\c- ammo.",
 									 "Fires shots that do 210 ice damage. Alt fire shoots\na blast of nitrogen 384 units ahead, creating\n4 series of icy gas streams doing 5 damage.",
@@ -215,19 +221,20 @@ str WeaponPickupText[MAXWEPS] = {
 									 "Heavy Super Shotgun shoots 24 pellets doing 15\ndamage in a 9.6 by 5.8 spread. 8 of these rip\nthrough targets.",
 									 "Erasus shotgun shoots highly ballistic shells\nwith 16 pellets each doing 15 damage. Has to\nreload after shooting twice. Alt fire shoots\nboth shells in the chamber, or reloads.",
 									 "Fires 24 plasma balls in a circular fashion\neach doing 20 damage. Does irreducable\ndamage. Has a clip size of 5.",
-									 "The explosive shotgun, the best there is. Fires\n9 pellets, each doing 15 on hit. Each pellet\ndoes 32-48 damage in a small area. Does self\ndamage. \cfIgnores shields.",
+									 "The explosive shotgun, the best there is. Fires\n10 pellets, each doing 15 on hit. Each pellet\ndoes 32-48 damage in a small area. Does self\ndamage. \cfIgnores shields.",
 									 "Slayer creates 6 blades each doing 9 damage\nand rip through. Alt fire detonates blades at\nwill for 90 damage in a 96 unit radius, \cfignoring\n\cfshields\c-. Blades return to you after travelling a bit.\nCan't hit \cughosts.",
-									 "An accurate and a very reliable weapon.\nEach bullet does 15 damage. Alt fire reloads.\nClip size is 50. Can be \cdreplaced.", 
+									 "An accurate and a very reliable weapon.\nEach bullet does 15 damage. Alt fire reloads.\nClip size is 50. Can be \cdreplaced\c-. Can use\n\cialternate\c- ammo.", 
 									 "Finest machine guns UAC has to offer. Bullets\ndo 25 damage in a 1.6 by 0.8 spread.\nClip size is 60. Can zoom.",
 									 "Lead Spitter is a super sonic bullet shooter\nshooting 2 bullets doing 18 damage in a\n6.4 by 4.8 spread. Clip size is 75.\n\cfIgnores shields.",
 									 "Templar fires silver bullets doing 20 damage\nin a 4.4 by 2.8 spread. Bullets deal x3 damage\nto undead and magical enemies. Clip size of 40.\nCan use \cigrenades\c-.",
-									 "Stronger, faster and better than ever! Poor\naccuracy, shoots tracers that do 16 - 28 damage\neach. Alt fire to spin. Can't hit \cughosts.",
+									 "Fires 7 pellets doing 12 damage in a 3.6 by 3.6\nspread. Alt fire makes it full auto, but\ntwice as inaccurate. Can use \cialternate\c- ammo.\nReload when full to use other ammo.",
+                                     "Stronger, faster and better than ever! Poor\naccuracy, shoots tracers that do 16 - 28 damage\neach. Alt fire to spin. Can't hit \cughosts.",
 									 "The ebony cannon shoots bouncing balls of death.\n16 - 40 damage with 48 explosion damage in 64\nunits. Alt fire shoots scatter bombs.\n\cfIgnores shields.",
 									 "A true classic. Just don't blow yourself up.\nCan be \cdreplaced. Can't hit \cughosts.",
 									 "The Torpedo Launcher shoots fast torpedos each\ndoing 180 - 220 damage on impact and 224\ndamage in a 128 unit radius. Can't hit \cughosts.",
 									 "Mercury Launcher fires accelerating and heat\nseeking mercury missiles doing 256 - 320 damage on\nhit and 192 damage in a 160 unit radius over\n2 seconds. Can't hit \cughosts.",
 									 "Fires a meteor doing 200 on impact and 192\nin a 192 unit radius. The meteor then splits into\nsmaller pieces, and those pieces as well. Main\nmeteor \cfignores shields\c-.",
-									 "Useful for when you can't reach around corners.\nDoes 80 damage on impact and 128 damage in a\n144 unit radius. Can be \cdreplaced.\nCan't hit \cughosts",
+									 "Useful for when you can't reach around corners.\nDoes 80 damage on impact and 128 damage in a\n144 unit radius. Can be \cdreplaced\c-. Can't\nhit \cughosts\c-. Can use \cialternate\c- ammo.",
 									 "The UAC Rotary Grenade Launcher does 192\ndamage on impact and 192 damage on a 192 unit\nradius. Can't hit \cughosts",
 									 "Top of the food chain for rockets. Shoots two\nhoming rockets each doing 160 damage both on\nimpact and explosion. Can't hit \cughosts.",
 									 "Best friend of the trigger happy.\nCan be \cdreplaced.",
@@ -288,58 +295,13 @@ str SlotWeapons[8][MAXWEPUPGRADES] = {
 	{ "Magnum", " Akimbo Pistols ", "Laser Pistol", "ResPistol1", "" },
 	{ " Shotgun ", "Upgraded Shotgun", "Upgraded Shotgun2", "ResShotgun1", "ResShotgun2" },
 	{ " Super Shotgun ", "Upgraded Super Shotgun", "Upgraded Super Shotgun2", "ResSSG1", "" },
-	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "ResMG1", "" },
+	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "ResMG1", "ResMG2" },
 	{ "Rocket Launcher", "Upgraded Rocket Launcher", "Upgraded Rocket Launcher2", "ResRL1", "" },
 	{ "Plasma Rifle", "Upgraded Plasma Rifle", "Upgraded Plasma Rifle2", "ResPlasma1", "ResPlasma2" },
 	{ "BFG 9000", "Upgraded BFG 9000", "Devastator", "MFG", "ResBFG1" },
 };
 
-enum {
-	AMMO_BASICSHELL,
-	AMMO_FLECHETTE,
-	AMMO_PIERCING,
-	AMMO_ELECTRIC,
-	
-	AMMO_BULLET,
-	AMMO_BASICGRENADE,
-	AMMO_40MMSONIC,
-	AMMO_40MMHEGRENADE
-};
-
-enum {
-	AMMO_TYPE_SHELL,
-	AMMO_TYPE_MGGRENADE,
-	AMMO_TYPE_GRENADE
-};
-
-#define SPECIALAMMO_TYPE_MAX AMMO_TYPE_GRENADE + 1
-int SpecialAmmoBase[SPECIALAMMO_TYPE_MAX] = { AMMO_BASICSHELL, AMMO_BULLET, AMMO_BASICGRENADE };
-int SpecialAmmoLimits[SPECIALAMMO_TYPE_MAX] = { AMMO_ELECTRIC, AMMO_40MMHEGRENADE, AMMO_40MMHEGRENADE };
-
 #define AMMODISPLAY_ID 1000
-
-#define MAXSPECIALAMMOCATEGORY 2
-#define MAXSPECIALAMMOTYPES AMMO_40MMHEGRENADE + 1
-#define SPECIALAMMO_NAME 0
-#define SPECIALAMMO_TAG 1
-str SpecialAmmoNames[MAXSPECIALAMMOTYPES][2] = {
-	{		"Shell",					"Normal Shells"						},
-	{ 		"FlechetteShell",			"\cdFlechette Shells"				},
-	{ 		"PiercingShell",			"\cfMagnum Shells"					},
-	{		"ElectricShell",			"\cvElectric Shells"				},
-	
-	{		"Clip",						"Bullets"							},
-	{		"Grenades",					"40mm Grenades"						},
-	{		"A40mmSonicGrenade",		"\cu40mm Sonic Grenades"			},
-	{		"A40mmHEGrenade",			"\cr40mm HEGrenades"				}
-};
-
-enum {
-	SPWEP_SG,
-	SPWEP_SSG,
-	SPWEP_MG,
-	SPWEP_GL
-};
 
 int CurrentLevelReward[MAXPLAYERS];
 int CurrentStatReward[MAXPLAYERS];
@@ -359,45 +321,6 @@ function int ResetBits(int val, int begin, int end) {
 	for(int i = begin; i < end + 1; ++i)
 		val &= ~(1 << i);
 	return val;
-}
-
-function int HasSpecialAmmoForWeapon(int ammo_category) {
-	for(int i = SpecialAmmoBase[ammo_category] + 1; i <= SpecialAmmoLimits[ammo_category]; ++i)
-		if(CheckInventory(SpecialAmmoNames[i][SPECIALAMMO_NAME]))
-			return i;
-	return SpecialAmmoBase[ammo_category];
-}
-
-function str GetSpecialAmmoSuffix(int weptype) {
-	str suffix = "";
-	if(weptype == SPWEP_SG)
-		suffix = "_3";
-	else if(weptype == SPWEP_SSG)
-		suffix = "_3X";
-	else if(weptype == SPWEP_MG)
-		suffix = "_4";
-	else if(weptype == SPWEP_GL)
-		suffix = "_5X";
-	return suffix;
-}
-
-function int GetSpecialAmmoMode(int ammo_category, int weptype) {
-	str suffix = GetSpecialAmmoSuffix(weptype);
-	return CheckInventory(StrParam(s:"SpecialAmmoMode", s:suffix));
-}
-
-function void SetSpecialAmmoMode(int ammo_category, int weptype) {
-	int mode = GetSpecialAmmoMode(ammo_category, weptype);
-	// while can cycle through on next, if no ammo keep searching and take mod
-	do {
-		mode = (mode + 1) % (SpecialAmmoLimits[ammo_category] + 1);
-		if(!mode)
-			mode = SpecialAmmoBase[ammo_category];
-	} while(!CheckInventory(SpecialAmmoNames[mode][SPECIALAMMO_NAME]));
-		
-	str suffix = GetSpecialAmmoSuffix(weptype);
-	SetInventory(StrParam(s:"SpecialAmmoMode", s:suffix), mode);
-	SetInventory("AmmoChangeMessage", mode);
 }
 
 function int CheckSlotWeapon(int slot) {
@@ -876,4 +799,10 @@ int Monster_CategoryWeightSum[MAX_MONSTER_CATEGORIES] = { 0 };
 
 function str GetIntermissionSong() {
     return StrParam(s:"INTER", d:random(1, 4));
+}
+
+function void CheckDeadlinessCrit() {
+    int roll = random(1, 100);
+    if(CheckInventory("Perk_Deadliness") * PERK_DEADLINESS_BONUS <= roll)
+        GiveInventory("CriticalHit", 1);
 }

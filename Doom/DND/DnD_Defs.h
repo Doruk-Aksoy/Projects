@@ -25,6 +25,7 @@ int Exp_ColorSet[8] = { 4, 16, 112, 160, 176, 196, 231, 251 };
 #define BASE_GREED_GAIN 10
 #define PERK_MEDICBONUS 5
 #define PERK_MEDICSTOREBONUS 15
+#define PERK_DEADLINESS_BONUS 2
 #define ATTRIB_PER_LEVEL 2
 #define DEFENSE_BONUS 2
 
@@ -56,7 +57,8 @@ enum {
 		RES_PERK_SHARP = 2,
 		RES_PERK_ENDURANCE = 4,
 		RES_PERK_CHARISMA = 8,
-		RES_PERK_MEDIC = 16
+		RES_PERK_MEDIC = 16,
+        RES_PERK_DEADLINESS = 32
 };
 
 #define NANOCAP 150
@@ -91,6 +93,7 @@ enum {
 	STAT_GRE,
 	STAT_MED,
 	STAT_MUN,
+    STAT_DED,
 	
 	STAT_EXP,
 	STAT_LVLEXP,
@@ -112,6 +115,7 @@ str StatNames[STAT_LVLCRED + 1] = {
 	"Perk_Greed",
 	"Perk_Medic",
 	"Perk_Munitionist",
+    "Perk_Deadliness",
 	
 	"Exp",
 	"LevelExp",
@@ -183,7 +187,8 @@ str Weapons[MAXWEPS][7] = {
 			 { "Upgraded Machine Gun",			    "H. Machine Gun",			"4",		"Clip",				"MGClip2",				    	"GotMG",					"WSG2ICO" 			    },
 			 { "Upgraded Machine Gun2",			    "Lead Spitter",				"4",		"Clip",				"MGClip3",				    	"GotMG",					"QWOPA0"				},
 			 { "ResMG1",							"Templar MG",				"4",		"Clip",				"MGClip4",				    	"GotMG",					"RW03X0"				},
-			 { " Minigun ",							"Minigun",					"4",		"Clip",				" ",							"GotCG",					"CHNGX0"				},
+             { "ResMG2",                            "Riot Cannon",              "4",        "RiotgunShell",     "RiotgunClip",                  "GotMG",                    "RIOTI0"               },
+             { " Minigun ",							"Minigun",					"4",		"Clip",				" ",							"GotCG",					"CHNGX0"				},
 			 { "Ebony Cannon",						"Ebony Cannon",				"4",		"EbonyAmmo",		"EbonyAmmoX",			        "GotEbony",					"EBONICO"				},
 			 { "Rocket Launcher",					"R. Launcher",				"5",		"RocketAmmo",		" ",							"GotRL",					"LAUNICO"				},
 			 { "Upgraded Rocket Launcher",		    "T. Launcher",				"5",		"RocketAmmo",		" ",							"GotRL",					"WPPKG0"				},
@@ -220,11 +225,7 @@ str Weapons[MAXWEPS][7] = {
 			 { "Venom",								"Venom",					"9",		"VenomAmmo",		"VenomAmmo",			        "GotVenom",					"VENOICO" 			    },
 			 { "Demon Heart",						"Demon Heart",				"9",		"HeartAmmo",		" ",							"GotHeart",					"HARTICO" 			    },
              { "DarkServantGloves",                 "Dark Servant Gloves",      "9",        "DarkServantEnergy"," ",                            "GotGloves",                "DSGNTICO"              },
-             { "Nailgun2",                          "Heavy Nailgun",            "9",        "BigNail",          " ",                            "GotNailgun2",              "NLCGF0"                },
-             
-             // free slots
-			 
-			 { "", "", "", "", "", "" }
+             { "Nailgun2",                          "Heavy Nailgun",            "9",        "BigNail",          " ",                            "GotNailgun2",              "NLCGF0"                }
 };
 
 enum {
@@ -236,6 +237,7 @@ enum {
 	RES_FLECHETTE,
 	RES_PIERCING,
 	RES_ELECTRIC,
+    RES_NITRO,
 	
 	RES_SONICGRENADE,
 	RES_HEGRENADE,
@@ -255,6 +257,7 @@ enum {
     RES_SLOT3UPG2,
 	RES_SLOT3SSGUPG1,
 	RES_SLOT4UPG1,
+    RES_SLOT4UPG2,
 	RES_SLOT5UPG1,
 	RES_SLOT5GL,
 	RES_SLOT6UPG1,
@@ -278,6 +281,7 @@ str Research_List[MAX_RESEARCHES] = {
 	"FlechetteShell",
 	"PiercingShell",
 	"ElectricShell",
+    "NitroShell",
 
 	"HEGrenade",
 	"SonicGrenade",
@@ -297,6 +301,7 @@ str Research_List[MAX_RESEARCHES] = {
     "Slot3Upgrade2",
 	"Slot3SSGUpgrade1",
 	"Slot4Upgrade1",
+    "Slot4Upgrade2",
 	"Slot5Upgrade1",
 	"Slot5GL",
 	"Slot6Upgrade1",
@@ -318,6 +323,7 @@ str Research_Label[MAX_RESEARCHES] = {
     "Flechette Shells",
     "Magnum Shells",
     "Electric Shells",
+    "Nitrogen Shells",
     
     "High Explosive Grenades",
     "Sonic Grenades",
@@ -337,6 +343,7 @@ str Research_Label[MAX_RESEARCHES] = {
     "Nitrogen Crossbow (3)",
     "Plasma Cannon (3)",
     "Templar Machine Gun (4)",
+    "Riot Cannon (4)",
     "Meteor Launcher (5)",
     "Grenade Launcher (5)",
     "Flamethrower (6)",
@@ -559,18 +566,116 @@ enum {
 	SSAM_SHOCK,
 	
 	SSAM_40MMHE,
-	SSAM_40MMSONIC
+	SSAM_40MMSONIC,
+    
+    SSAM_NITROSHELL
 };
 
-#define MAX_SPECIAL_AMMOS SSAM_40MMSONIC + 1
+enum {
+	SPWEP_SG,
+	SPWEP_SSG,
+	SPWEP_MG,
+	SPWEP_GL
+};
+
+#define MAX_SPECIAL_AMMOS SSAM_NITROSHELL + 1
 str SuperSpecialAmmos[MAX_SPECIAL_AMMOS] = {
 	"FlechetteShell", 
 	"PiercingShell",
 	"ElectricShell",
 	
 	"A40mmSonicGrenade",
-	"A40mmHEGrenade"
+	"A40mmHEGrenade",
+    
+    "NitroShell"
 };
+
+enum {
+	AMMO_BASICSHELL,
+	AMMO_FLECHETTE,
+	AMMO_PIERCING,
+	AMMO_ELECTRIC,
+	
+	AMMO_BULLET,
+	AMMO_BASICGRENADE,
+	AMMO_40MMSONIC,
+	AMMO_40MMHEGRENADE,
+    
+    AMMO_RIOTSHELL,
+    AMMO_NITROGENSHELL,
+    AMMO_EXPLOSIVESHELL
+};
+
+enum {
+	AMMO_TYPE_SHELL,
+	AMMO_TYPE_MGGRENADE,
+	AMMO_TYPE_GRENADE,
+    AMMO_TYPE_SHELL2
+};
+
+#define SPECIALAMMO_TYPE_MAX AMMO_TYPE_SHELL2 + 1
+int SpecialAmmoBase[SPECIALAMMO_TYPE_MAX] = { AMMO_BASICSHELL, AMMO_BULLET, AMMO_BASICGRENADE, AMMO_RIOTSHELL };
+int SpecialAmmoLimits[SPECIALAMMO_TYPE_MAX] = { AMMO_ELECTRIC, AMMO_40MMHEGRENADE, AMMO_40MMHEGRENADE, AMMO_EXPLOSIVESHELL };
+
+#define MAXSPECIALAMMOCATEGORY 2
+#define MAXSPECIALAMMOTYPES AMMO_EXPLOSIVESHELL + 1
+#define SPECIALAMMO_NAME 0
+#define SPECIALAMMO_TAG 1
+str SpecialAmmoNames[MAXSPECIALAMMOTYPES][2] = {
+	{		"Shell",					"Normal Shells"						},
+	{ 		"FlechetteShell",			"\cdFlechette Shells"				},
+	{ 		"PiercingShell",			"\cfMagnum Shells"					},
+	{		"ElectricShell",			"\cvElectric Shells"				},
+	
+	{		"Clip",						"Bullets"							},
+	{		"Grenades",					"40mm Grenades"						},
+	{		"A40mmSonicGrenade",		"\cu40mm Sonic Grenades"			},
+	{		"A40mmHEGrenade",			"\cr40mm HEGrenades"				},
+    
+    {       "RiotgunShell",             "\cgRiot Shells"                    },
+    {       "NitroShell",               "\c[E3]Nitrogen Shells"             },
+    {       "ExplodingShell",           "\cuExplosive Shells"               }
+};
+
+function str GetSpecialAmmoSuffix(int weptype) {
+	str suffix = "";
+	if(weptype == SPWEP_SG)
+		suffix = "_3";
+	else if(weptype == SPWEP_SSG)
+		suffix = "_3X";
+	else if(weptype == SPWEP_MG)
+		suffix = "_4";
+	else if(weptype == SPWEP_GL)
+		suffix = "_5X";
+	return suffix;
+}
+
+function int HasSpecialAmmoForWeapon(int ammo_category) {
+	for(int i = SpecialAmmoBase[ammo_category] + 1; i <= SpecialAmmoLimits[ammo_category]; ++i)
+		if(CheckInventory(SpecialAmmoNames[i][SPECIALAMMO_NAME]))
+			return i;
+	return SpecialAmmoBase[ammo_category];
+}
+
+function int GetSpecialAmmoMode(int ammo_category, int weptype) {
+	str suffix = GetSpecialAmmoSuffix(weptype);
+	return CheckInventory(StrParam(s:"SpecialAmmoMode", s:suffix));
+}
+
+// if this runs when player has no ammo, big trouble. Make sure decorate of weapons dont allow it!
+function void SetSpecialAmmoMode(int ammo_category, int weptype) {
+	int mode = GetSpecialAmmoMode(ammo_category, weptype);
+	// while can cycle through on next, if no ammo keep searching and take mod
+	do {
+		mode = (mode + 1) % (SpecialAmmoLimits[ammo_category] + 1);
+		if(!mode)
+			mode = SpecialAmmoBase[ammo_category];
+	} while(!CheckInventory(SpecialAmmoNames[mode][SPECIALAMMO_NAME]));
+		
+	str suffix = GetSpecialAmmoSuffix(weptype);
+	SetInventory(StrParam(s:"SpecialAmmoMode", s:suffix), mode);
+	SetInventory("AmmoChangeMessage", mode);
+}
 
 function void DoubleSpecialAmmoCapacity() {
 	for(int i = 0; i < MAX_SPECIAL_AMMOS; ++i)

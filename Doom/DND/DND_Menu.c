@@ -199,11 +199,16 @@ Script 906 (int type) CLIENTSIDE {
 					HudMessage(s:"\c[B1]Munitionist: \c-", d:CheckInventory("Perk_Munitionist"); HUDMSG_PLAIN, RPGMENUITEMID - 6, CR_WHITE, 184.1, 160.0, 0.0, 0.0);
 				else
 					HudMessage(s:"\c[Y5]Munitionist: \c-", d:CheckInventory("Perk_Munitionist"); HUDMSG_PLAIN, RPGMENUITEMID - 6, CR_WHITE, 184.1, 160.0, 0.0, 0.0);
-				
-				if(curposy == MenuListenMax[MENU_PERK].y)
-					HudMessage(s:"\c[B1]RETURN\c-"; HUDMSG_PLAIN, RPGMENUITEMID - 7, CR_WHITE, 316.0, 274.0, 0.0, 0.0);
+				if(curposy == 6)
+					HudMessage(s:"\c[B1]Deadliness: \c-", d:CheckInventory("Perk_Deadliness"); HUDMSG_PLAIN, RPGMENUITEMID - 7, CR_WHITE, 184.1, 178.0, 0.0, 0.0);
 				else
-					HudMessage(s:"\c[Y5]RETURN\c-"; HUDMSG_PLAIN, RPGMENUITEMID - 7, CR_WHITE, 316.0, 274.0, 0.0, 0.0);
+					HudMessage(s:"\c[Y5]Deadliness: \c-", d:CheckInventory("Perk_Deadliness"); HUDMSG_PLAIN, RPGMENUITEMID - 7, CR_WHITE, 184.1, 178.0, 0.0, 0.0);
+                
+                
+				if(curposy == MenuListenMax[MENU_PERK].y)
+					HudMessage(s:"\c[B1]RETURN\c-"; HUDMSG_PLAIN, RPGMENUITEMID - 8, CR_WHITE, 316.0, 274.0, 0.0, 0.0);
+				else
+					HudMessage(s:"\c[Y5]RETURN\c-"; HUDMSG_PLAIN, RPGMENUITEMID - 8, CR_WHITE, 316.0, 274.0, 0.0, 0.0);
 					
 					
 				DrawHelpCornerMessage(MENU_PERK, 0, curposy);
@@ -502,8 +507,9 @@ Script 906 (int type) CLIENTSIDE {
 				DrawToggledImage(SHOP_WEP_HMG, 0, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot4Replaced", 1, CR_RED);
 				DrawToggledImage(SHOP_WEP_LEAD, 1, OBJ_WEP | OBJ_HASCHOICE, CR_WHITE, CR_GREEN, "P_Slot4Replaced", 1, CR_RED);
 				DrawToggledImage(SHOP_WEP_RESMG1, 2, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot4Replaced", 1, CR_RED);
-				DrawToggledImage(SHOP_WEP_MINIGUN, 3, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot4Luxury", 1, CR_RED);	
-				DrawToggledImage(SHOP_WEP_EBONY, 4, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot4Luxury", 1, CR_RED);
+                DrawToggledImage(SHOP_WEP_RESMG2, 3, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot4Replaced", 1, CR_RED);
+				DrawToggledImage(SHOP_WEP_MINIGUN, 4, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot4Luxury", 1, CR_RED);	
+				DrawToggledImage(SHOP_WEP_EBONY, 5, OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH, CR_WHITE, CR_GREEN, "P_Slot4Luxury", 1, CR_RED);
 			
 				if(curposy == MenuListenMax[MENU_SHOP_WEAPON4].y) {
 					DrawHelpCornerMessage(MENU_SHOP_WEAPON4, 0, curposy);
@@ -669,11 +675,12 @@ Script 906 (int type) CLIENTSIDE {
 				HudMessage(s:"\c[Y5]Credits: \c-$", d:CheckInventory("Credit"); HUDMSG_PLAIN, RPGMENUITEMID, CR_WHITE, 264.1, 64.0, 0.0, 0.0);
 
 				DrawToggledImage(SHOP_AMMO_PCAN, 0, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-				DrawToggledImage(SHOP_AMMO_METEOR, 1, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-				DrawToggledImage(SHOP_AMMO_FUEL, 2, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-                DrawToggledImage(SHOP_AMMO_LG, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-                DrawToggledImage(SHOP_AMMO_NITROGEN, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-                DrawToggledImage(SHOP_AMMO_ION, 5, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_RIOTSHELL, 1, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+				DrawToggledImage(SHOP_AMMO_METEOR, 2, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+				DrawToggledImage(SHOP_AMMO_FUEL, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_LG, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_NITROGEN, 5, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_ION, 6, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				
 				if(curposy == MenuListenMax[MENU_SHOP_AMMO3].y) {
 					DrawHelpCornerMessage(MENU_SHOP_AMMO3, curposx, curposy);
@@ -708,8 +715,9 @@ Script 906 (int type) CLIENTSIDE {
 				DrawToggledImage(SHOP_AMMO_FLECHETTE, 0, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				DrawToggledImage(SHOP_AMMO_PIERCING, 1, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				DrawToggledImage(SHOP_AMMO_ELECTRIC, 2, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-				DrawToggledImage(SHOP_AMMO_SONICGRENADE, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
-				DrawToggledImage(SHOP_AMMO_HEGRENADE, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+                DrawToggledImage(SHOP_AMMO_NITROSHELL, 3, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+				DrawToggledImage(SHOP_AMMO_SONICGRENADE, 4, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
+				DrawToggledImage(SHOP_AMMO_HEGRENADE, 5, OBJ_AMMO | OBJ_RESEARCH, CR_WHITE, CR_GREEN, 0, 0, 0);
 				
 				if(curposy == MenuListenMax[MENU_SHOP_AMMO_SPECIAL1].y) {
 					DrawHelpCornerMessage(MENU_SHOP_AMMO_SPECIAL1, curposx, curposy);
@@ -787,10 +795,10 @@ Script 906 (int type) CLIENTSIDE {
 			}
 			else if(curopt == MENU_SHOP_ARMOR1) {
 				DeleteTextRange(RPGMENUITEMIDEND, RPGMENUITEMID);
-				HudMessage(s:"--- COMMON ARMORS ---"; HUDMSG_PLAIN, RPGMENUHELPID, CR_CYAN, 316.4, 44.0, 0.0, 0.0);
+				HudMessage(s:"--- ARMORS (1) ---"; HUDMSG_PLAIN, RPGMENUHELPID, CR_CYAN, 316.4, 44.0, 0.0, 0.0);
 				HudMessage(s:"\c[Y5]Credits: \c-$", d:CheckInventory("Credit"); HUDMSG_PLAIN, RPGMENUITEMID, CR_WHITE, 264.1, 64.0, 0.0, 0.0);
 				
-				for(int i  = 0; i < CLASSIC_ARMOR_COUNT; ++i)
+				for(int i  = 0; i < PAGE1_ARMOR_COUNT; ++i)
 					DrawToggledImage(SHOP_ARMOR_GREEN + i, i, ArmorDrawInfo[i].flags, CR_WHITE, CR_GREEN, "Armor", ArmorCapacities[i], CR_RED);
 			
 				if(curposy == MenuListenMax[MENU_SHOP_ARMOR1].y) {
@@ -812,11 +820,11 @@ Script 906 (int type) CLIENTSIDE {
 			}
 			else if(curopt == MENU_SHOP_ARMOR2) {
 				DeleteTextRange(RPGMENUITEMIDEND, RPGMENUITEMID);
-				HudMessage(s:"--- RARE ARMORS ---"; HUDMSG_PLAIN, RPGMENUHELPID, CR_CYAN, 316.4, 44.0, 0.0, 0.0);
+				HudMessage(s:"--- ARMORS (2) ---"; HUDMSG_PLAIN, RPGMENUHELPID, CR_CYAN, 316.4, 44.0, 0.0, 0.0);
 				HudMessage(s:"\c[Y5]Credits: \c-$", d:CheckInventory("Credit"); HUDMSG_PLAIN, RPGMENUITEMID, CR_WHITE, 264.1, 64.0, 0.0, 0.0);
 				
-				for(int i  = 0; i < MAXARMORS - CLASSIC_ARMOR_COUNT; ++i)
-					DrawToggledImage(SHOP_ARMOR_CYBERNETIC + i, i, ArmorDrawInfo[CLASSIC_ARMOR_COUNT + i].flags, CR_WHITE, CR_GREEN, "Armor", ArmorCapacities[i + CLASSIC_ARMOR_COUNT], CR_RED);
+				for(int i  = 0; i < PAGE2_ARMOR_COUNT; ++i)
+					DrawToggledImage(SHOP_FIRSTARMOR2_INDEX + i, i, ArmorDrawInfo[PAGE1_ARMOR_COUNT + i].flags, CR_WHITE, CR_GREEN, "Armor", ArmorCapacities[i + PAGE1_ARMOR_COUNT], CR_RED);
 			
 				if(curposy == MenuListenMax[MENU_SHOP_ARMOR2].y) {
 					DrawHelpCornerMessage(MENU_SHOP_ARMOR2, curposx, curposy);
@@ -1157,8 +1165,13 @@ Script 907 (void) {
 						TakeInventory("PerkPoint", 1);
 						LocalAmbientSound("RPG/MenuChoose", 127);
 					}
-					else if(curposy == 5 && CheckInventory("Perk_Munitionist") < PERK_MAX) { // medic
+					else if(curposy == 5 && CheckInventory("Perk_Munitionist") < PERK_MAX) { // munitionist
 						GiveInventory("Perk_Munitionist", 1);
+						TakeInventory("PerkPoint", 1);
+						LocalAmbientSound("RPG/MenuChoose", 127);
+					}
+                    else if(curposy == 6 && CheckInventory("Perk_Deadliness") < PERK_MAX) { // deadliness
+                        GiveInventory("Perk_Deadliness", 1);
 						TakeInventory("PerkPoint", 1);
 						LocalAmbientSound("RPG/MenuChoose", 127);
 					}
@@ -1604,7 +1617,7 @@ Script 907 (void) {
 					LocalAmbientSound("RPG/MenuChoose", 127);
 				}
 				else {
-					ProcessTrade(curposy, SHOP_ARMOR_GREEN, SHOP_ARMOR_RED, TRADE_BUY | TRADE_ARMOR);
+					ProcessTrade(curposy, SHOP_ARMORPAGE1_BEGIN, SHOP_ARMORPAGE1_END, TRADE_BUY | TRADE_ARMOR);
 				}
 				SetInventory("MadeChoice", 0);
 			}
@@ -1621,7 +1634,7 @@ Script 907 (void) {
 					LocalAmbientSound("RPG/MenuChoose", 127);
 				}
 				else {
-					ProcessTrade(curposy, SHOP_ARMOR_CYBERNETIC, SHOP_ARMOR_ENERGY, TRADE_BUY | TRADE_ARMOR);
+					ProcessTrade(curposy, SHOP_ARMORPAGE2_BEGIN, SHOP_LASTARMOR_INDEX, TRADE_BUY | TRADE_ARMOR);
 				}
 				SetInventory("MadeChoice", 0);
 			}
