@@ -1,0 +1,61 @@
+#library "DNDSHRD"
+#include "zcommon.h"
+
+#include "DnD_Common.h"
+#include "DnD_Shared.h"
+
+Script "DND Shared Item Check" (void) {
+	int pid = ActivatorTID();
+	// find which item this guy is really closest to
+	int closest = GetClosestSharedItem(pid);
+	int res = 1;
+	if(closest != -1) {
+		// check if this item was picked up
+		// prevent multiple pickup calls from being handled while this is being processed
+		if(!Shared_Item_Info[closest].semaphore[pid - P_TIDSTART]) {
+			if(!Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART])
+				Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 1;
+			res = Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART];
+		}
+	}
+	SetResultValue(res);
+}
+
+Script "DND Shared Item Pickup" (void) {
+	int pid = ActivatorTID();
+	// find which item this guy is really closest to
+	int closest = GetClosestSharedItem(pid);
+	if(closest != -1) {
+		Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART] = 1;
+		Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 1;
+		ACS_ExecuteAlways(801, 0, closest + SHARED_ITEM_TID_BEGIN);
+	}
+}
+
+Script "DND Shared Item Init" (void) {
+	Thing_ChangeTID(0, SHARED_ITEM_TID_BEGIN + shared_item_counter++);
+}
+
+Script "DND Shared Item Clear Semaphore" (void) {
+	int pid = ActivatorTID();
+	// find which item this guy is really closest to
+	int closest = GetClosestSharedItem(pid);
+	if(closest != -1)
+		Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 0;
+}
+
+Script 800 ENTER CLIENTSIDE {
+	while(1) {
+		if(PlayerNumber() == ConsolePlayerNumber()) {
+			for(int i = 0; i < shared_item_queue_count; ++i)
+				SetActorProperty(shared_item_clientside_queue[i], APROP_ALPHA, 0.25);
+			shared_item_queue_count = 0;
+		}
+		Delay(5);
+	}
+}
+
+Script 801(int tid) CLIENTSIDE {
+	if(PlayerNumber() == ConsolePlayerNumber())
+		shared_item_clientside_queue[shared_item_queue_count++] = tid;
+}
