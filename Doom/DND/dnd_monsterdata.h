@@ -1,3 +1,6 @@
+#ifndef DND_MONSTERDATA_IN
+#define DND_MONSTERDATA_IN
+
 enum {
 	// Classics
 	MONSTER_ZOMBIEMAN,
@@ -52,6 +55,7 @@ enum {
 	MONSTER_MRROBOT,
 	MONSTER_ZSEC,
 	MONSTER_ZSPECMG,
+	MONSTER_PLASMAZOMBIE,
 	
 	// Demon
 	MONSTER_BLOODDEMON,
@@ -64,7 +68,8 @@ enum {
 	MONSTER_NHUMCIGN,
 	MONSTER_STONEDEMON,
 	MONSTER_BRUTY,
-	MONSTER_HOUND,
+	MONSTER_SATYR,
+	MONSTER_EARTHGOLEM,
 	
 	// Spectre
 	MONSTER_LURKER,
@@ -96,6 +101,7 @@ enum {
 	MONSTER_FORGOTTENONE,
 	MONSTER_HADESSPHERE,
 	MONSTER_WATCHER,
+	MONSTER_DARKLICH_SPIRIT,
 	
 	// Cacodemon
 	MONSTER_WEAKENER,
@@ -107,6 +113,7 @@ enum {
 	MONSTER_GUARDIAN,
 	MONSTER_ENHANCEDCACO,
 	MONSTER_EARTHLICH,
+	MONSTER_WICKED,
 	
 	// Pain Elemental
 	MONSTER_BLOODLICH,
@@ -128,9 +135,10 @@ enum {
 	MONSTER_CADAVER,
 	MONSTER_DARKSERVANT,
 	MONSTER_CRAWLER,
+	MONSTER_DRAUGR,
 	
 	// Hell Knight
-	MONSTER_SATYR,
+	MONSTER_BLOODSATYR,
 	MONSTER_HELLWARRIOR,
 	MONSTER_HELLSFURY,
 	MONSTER_BLACKKNIGHT,
@@ -140,6 +148,7 @@ enum {
 	MONSTER_CYBORGWARRIOR,
 	MONSTER_SHADOWBEAST,
 	MONSTER_CHAOSSERPENT,
+	MONSTER_MOONSATYR,
 
 	// Baron
 	MONSTER_LAVADEMON,
@@ -152,6 +161,8 @@ enum {
 	MONSTER_CYBRUISER,
 	MONSTER_BRUISERDEMON,
 	MONSTER_MAGMASERPENT,
+	MONSTER_DREADKNIGHT,
+	MONSTER_MAGMAGOLEM,
 	
 	// Fatso
 	MONSTER_CORPULENT,
@@ -171,6 +182,7 @@ enum {
 	MONSTER_BABYDEMOLISHER,
 	MONSTER_CHAINGUNGENERAL,
 	MONSTER_CHAINGUNCOMMANDO,
+	MONSTER_LEGIONNAIRE,
 	
 	// ArchVile
 	MONSTER_DIABLOIST,
@@ -181,6 +193,7 @@ enum {
 	MONSTER_DEATHKNIGHT,
 	MONSTER_HORSHACKER,
 	MONSTER_DARKZEALOT,
+	MONSTER_FLESHWIZARD,
 	
 	// Spider Mastermind
 	MONSTER_DEMOLISHER,
@@ -190,6 +203,7 @@ enum {
 	MONSTER_GOLDLICH,
 	MONSTER_IRONLICH,
 	MONSTER_SPIDEROVERLORD,
+	MONSTER_DARKLICH,
 	
 	// Cyberdemon
 	MONSTER_CARDINAL,
@@ -198,18 +212,48 @@ enum {
 	MONSTER_AZAZEL,
 	MONSTER_HELLSMITH,
 	MONSTER_THANATOS,
-	MONSTER_AVATAR
+	MONSTER_AVATAR,
+	MONSTER_CERBERUS,
+	
+	MONSTER_DREAMINGGOD,
+	MONSTER_TORRASQUE,
+	MONSTER_MORDECQAI,
+	MONSTER_GODSLAYER
 };
 
-#define MONSTER_COUNT MONSTER_AVATAR + 50 // possible compatibility for other wads' monsters
+enum {
+	DND_ZOMBIEMANID,
+	DND_SHOTGUNNERID,
+	DND_CHAINGUNGUYID,
+	DND_DEMONID,
+	DND_SPECTREID,
+	DND_IMPID,
+	DND_CACODEMONID,
+	DND_PAINELEMENTALID,
+	DND_LOSTSOULID,
+	DND_REVENANTID,
+	DND_HELLKNIGHTID,
+	DND_BARONID,
+	DND_FATSOID,
+	DND_ARCHVILEID,
+	DND_ARACHNOTRONID,
+	DND_SPIDERMASTERMINDID,
+	DND_CYBERDEMONID,
+	DND_NAZIID
+};
 
-function int IsBoss(int monsterid) {
+#define LEGENDARY_START MONSTER_DREAMINGGOD
+#define DND_LASTMONSTER_INDEX MONSTER_GODSLAYER
+#define DND_MAX_LEGENDARY DND_LASTMONSTER_INDEX - LEGENDARY_START + 1
+#define MONSTER_COUNT DND_LASTMONSTER_INDEX + 50 // possible compatibility for other wads' monsters
+
+int IsBoss(int monsterid) {
 	if(monsterid == MONSTER_CYBERDEMON || monsterid == MONSTER_MASTERMIND || monsterid >= MONSTER_DEMOLISHER)
 		return 1;
 	return 0;
 }
 
-#define MAX_MONSTER_TRAITS 21
+#define MAX_MONSTER_TRAITS 31
 #define MONSTER_TRAITID 1103
 #define MONSTER_BARID MONSTER_TRAITID + MAX_MONSTER_TRAITS + 1
 // up to 1102 is occupied by barfillid, 1102 included
@@ -218,6 +262,12 @@ function int IsBoss(int monsterid) {
 #define MONSTER_NAMEID 999
 
 str MonsterTraits[MAX_MONSTER_TRAITS] = {
+	"Energy Weakness",
+	"Silver Weakness",
+	"Fire Weakness",
+	"Ice Weakness",
+	"Magic Weakness",
+	
 	"Explosive Resist",
 	"High Explosive Resist",
 	"Explosive Immune",
@@ -238,209 +288,72 @@ str MonsterTraits[MAX_MONSTER_TRAITS] = {
 	"Poisonous",
 	"Death Surprise",	// monsters with dangerous deaths
 	"Rage", // monsters that get angry after a certain condition
-	"Pierces Armor" // monsters that ignore player armor
+	"Pierces Armor", // monsters that ignore player armor
+	"Aggressive", // more aggression
+	"Extra Fast", // nightmare fast
+	"Fast Reaction", // quicktoretaliate
+	"No Pain",
+	"Magic Resist"
 };
 
-str MonsterInfo[MONSTER_COUNT] = {
-	// Classics
-	"Zombieman",
-	"Shotgunner",
-	"Chaingunner",
-	"Demon",
-	"Spectre",
-	"Imp",
-	"Cacodemon",
-	"Pain Elemental",
-	"Lost Soul",
-	"Revenant",
-	"Hell Knight",
-	"Baron of Hell",
-	"Mancubus",
-	"Arch Vile",
-	"Arachnotron",
-	"Spider Mastermind",
-	"Cyberdemon",
-	"SS Nazi",
-	
-	// DnD Exclusive
-	
-	// Zombieman
-	"Zombieman",
-	"Zombie Ranger",
-	"SMG Zombie",
-	"Rapid Fire Zombie",
-	"Zombie Marine",
-	"Armored Zombie",
-	"Pistol Zombie",
-	"Enforcer",
-	"Undead Hunter",
-	"Prophet",
-	
-	// Shotgunner
-	"Armored SSG Zombie",
-	"ZSpec Shotgunner",
-	"Armored Shotgunner",
-	"Sawedoff Zombie",
-	"Sawedoff Zombie",
-	"Undead Rogue",
-	"Enforcer Captain",
-	"SSG Zombie",
-	
-	// Chaingunner
-	"Enforcer Elite",
-	"MG Zombie",
-	"Undead Initiate",
-	"Double Chaingunner",
-	"Chaingun Major",
-	"Robot Guard",
-	"ZSec",
-	"ZSpec MG",
-	
-	// Demon
-	"Blood Demon",
-	"Blood Fiend",
-	"Cyber Fiend",
-	"Gray Demon",
-	"Stone Imp",
-	"Scavenger",
-	"Soul Eater",
-	"Nhumcign",
-	"Stone Demon",
-	"Big Bruty",
-	"Demon Hound",
-	
-	// Spectre
-	"Lurker",
-	"Gravedigger",
-	"Devourer",
-	"Nightmare Demon",
-	
-	// Imp
-	"Dark Imp",
-	"Void Dark Imp",
-	"Nether Dark Imp",
-	"Dark Imp",
-	"Imp Abomination",
-	"Imp",
-	"Void Imp",
-	"Soul Harvester",
-	"Pyro Imp",
-	"Devil",
-	"Vulgar",
-	"Undead Mage",
-	"Shadow",
-	"Roach",
-	
-	// Lost Soul
-	"Baby Cacodemon",
-	"Ethereal Soul",
-	"Fleash Spawn",
-	"Guardian Cube",
-	"Forgotten One",
-	"Hades Sphere",
-	"Watcher",
-	
-	// Cacodemon
-	"Weakener",
-	"Shadow Priest",
-	"Grell",
-	"Death Whisperer",
-	"Cacolich",
-	"Inferno",
-	"Guardian",
-	"Enhanced Cacodemon",
-	"Earth Lich",
-	
-	// Pain Elemental
-	"Blood Lich",
-	"Hades Elemental",
-	"Hell Arbiter",
-	"Defiler",
-	"Tortured Soul",
-	"Shadow Disciple",
-	"Sentinel",
-	"Wraith",
-	
-	// Revenant
-	"Incarnate",
-	"Beam Revenant",
-	"Undead Knight",
-	"Widowmaker",
-	"Yeti",
-	"Sludge Giant",
-	"Cadaver",
-	"Dark Servant",
-	"Crawler",
-	
-	// Hell Knight
-	
-	"Satyr",
-	"Hell Warrior",
-	"Hell's Fury",
-	"Black Knight",
-	"Archon of Hell",
-	"Warlord of Hell",
-	"Skull Wizard",
-	"Cyborg Warrior",
-	"Shadow Beast",
-	"Chaos Serpent",
-
-	// Baron
-	"Lava Giant",
-	"Lord of Heresy",
-	"Bormereth",
-	"Barbatos",
-	"Bloodseeker",
-	"Shadow Wizard",
-	"Kjaroch",
-	"Cybruiser",
-	"Bruiser Demon",
-	"Magma Serpent",
-	
-	// Fatso
-	"Corpulent",
-	"Daedabus",
-	"Paladin",
-	"Gamon",
-	"Mephisto",
-	"Mafibus",
-	"Ice Mancubus",
-	"Abomination",
-	
-	// Arachnotron
-	"Fusion Spider",
-	"Rail Arachnotron",
-	"Hellforge Spider",
-	"Vore",
-	"Baby Demolisher",
-	"Chaingun General",
-	"Chaingun Commando",
-	
-	// ArchVile
-	"Diabloist",
-	"Undead Priest",
-	"Death Vile",
-	"Hierophant",
-	"Guru",
-	"Death Knight",
-	"Horshacker",
-	"Dark Zealot",
-	
-	// Spider Mastermind
-	"Spider Demolisher",
-	"Arachnophyte",
-	"Pisonic Queen",
-	"Angel of Death",
-	"Gold Lich",
-	"Iron Lich",
-	"Spider Overlord",
-	
-	// Cyberdemon
-	"Dark Cardinal",
-	"Terminator",
-	"Thamuz",
-	"Azazel",
-	"Hell Smith",
-	"Thanatos",
-	"Avatar of Chaos"
+#define MAX_MONSTER_TRAITS2 9
+str MonsterTraits2[MAX_MONSTER_TRAITS2] = {
+	"Physical Immune",
+	"Energy Resist",
+	"Energy Immune",
+	"Magic Resist",
+	"Magic Immune",
+	"Elemental Resist",
+	"Elemental Immune",
+	"Extra Strong",
+	"Vital"
 };
+
+// First element on each list is the "Vanilla" monster, rest follow from their variations with Var1 to VarX
+#define MAX_MONSTER_CATEGORIES 17
+#define MAX_MONSTER_VARIATIONS 15
+int Monster_Weights[MAX_MONSTER_CATEGORIES][MAX_MONSTER_VARIATIONS] = {
+    // Zombieman
+    { 16, 16, 8, 12, 8, 8, 8, 8, 16, 12, 8, -1 },
+    // Shotgunguy
+    { 16, 4, 8, 6, 4, 4, 6, 6, 4, -1 },
+    // Chaingunguy
+    { 8, 8, 8, 6, 4, 4, 4, 3, 4, 6, -1 },
+    // Demon
+    { 16, 16, 12, 8, 12, 16, 8, 10, 7, 8, 10, 10, 6, -1 },
+    // Spectre
+    { 1, 1, 1, 1, 1, 1, 1, 1, -1 },
+    // Imp
+    { 16, 8, 8, 8, 8, 8, 16, 16, 16, 12, 12, 8, 8, 8, 10 },
+    // Caco
+    { 16, 16, 16, 12, 12, 10, 16, 16, 16, 12, 9, -1 },
+    // Pain Elemental
+    { 16, 12, 10, 10, 16, 16, 12, 12, -1 },
+    // Lost Soul
+    { 8, 8, 6, 8, 8, 8, 6, -1 },
+    // Revenant
+    { 16, 16, 12, 12, 8, 9, 9, 8, 9, 10, 9, -1 },
+    // HellKnight
+    { 12, 16, 14, 12, 10, 10, 10, 10, 8, 12, 12, 10, 6, -1	},
+    // Baron
+    { 16, 16, 16, 12, 12, 10, 10, 8, 8, 8, 10, 6, 6, -1 },
+    // Fatso
+    { 16, 12, 12, 10, 10, 8, 10, 12, 16, 5, -1 },
+    // ArchVile
+    { 16, 8, 8, 12, 8, 8, 6, 6, 6, 5, -1 },
+    // Arachno
+    { 16, 16, 16, 12, 10, 8, 10, 10, 8, -1 },
+    // Spider Mastermind
+    { 16, 10, 10, 12, 8, 8, 8, 10, 6, -1 },
+    // Cyberdemon
+    { 16, 12, 12, 12, 10, 10, 8, 8, 5, -1 }
+};
+
+str LegendaryMonsters[DND_MAX_LEGENDARY] = {
+	"DreamingGod",
+	"Torrasque",
+	"Mordecqai",
+	"GodSlayer"
+};
+
+#endif

@@ -1,8 +1,15 @@
-#define MAXUPG 14
-#define MAXTEMPWEPS 10
-#define MAXBACKPACK 55 // To reach 600 shells
-#define UNUSEDWEPS 5
-#define TEMPBEGIN (MAXWEPS - MAXTEMPWEPS) - UNUSEDWEPS
+#include "Dnd_Common.h"
+#include "DnD_Elites.h"
+#include "DnD_DatabaseRows.h"
+#include "DnD_MenuConstants.h"
+#include "DnD_TempWeps.h"
+#include "DnD_DamageCache.h"
+#include "DnD_Ammo.h"
+#include "DnD_Stat.h"
+#include "DnD_Monsters.h"
+#include "DnD_SpecialTrails.h"
+#include "DnD_Sync.h"
+
 #define PERK_GAIN_RATE 5
 
 #define ASPECT_4_3 (4.0 / 3)
@@ -14,28 +21,15 @@
 #define BASEMGCLIP 50
 #define BASEHMGCLIP 60
 
-#define SHELLMAX 600
-#define EXPSHELLMAX 480
-#define CLIPMAX 2400
-#define EBONYMAX 720
-#define EBONYXMAX 360
-#define ROCKETMAX 600
-#define GRENADEMAX 600
-#define HMISMAX 480
-#define CELLMAX 3600
-#define NAILMAX 1200
-#define BASILISKMAX 3000
-#define GAUSSMAX 900
-
 // dash script defs, by KeksDose
-#define SD_TIMEFRAME		7					// Tics during which you must double press
+#define SD_TIMEFRAME		7			// Tics during which you must double press
 #define SD_DASHDELAY		27			// Tics before being able to dash again
 #define SD_DASHSPEED		9.0	   		// Dash speed whilst in the air
 #define SD_DASHJUMP			4.0	   	    // Adds a little z-velocity while in the air
-#define SD_DASHSTRONG		20.0			// And dash speed whilst grounded
-#define SD_SOUNDVOLUME		1.0	    // How loud the dash sound is played
+#define SD_DASHSTRONG		20.0		// And dash speed whilst grounded
+#define SD_SOUNDVOLUME		1.0			// How loud the dash sound is played
 
-#define CHANCE_HEART 10
+#define CHANCE_HEART 0.1
 
 #define UPGRADETEXTID 6999
 #define SURVIVEICO 7000
@@ -56,8 +50,7 @@
 
 #define INTERVENTION_DURATION TICRATE * 8
 
-#define DND_BUDGET_BASE 5
-#define DND_BACKPACK_RATIO 5
+#define DND_BUDGET_BASE 3
 #define DND_MAX_SHARE 4
 #define DND_MUNITION_GAIN 10
 #define DND_SPREE_AMOUNT 4 * TICRATE // 4 * 35
@@ -69,204 +62,166 @@
 #define DND_SPREE_TEXT1ID 5999
 #define DND_SPREE_TEXT2ID 5998
 
+#define DND_SAVAGERY_BONUS 0.01
+
+#define DND_DEMONBANE_GAIN 0.5
+
 #define DND_CYBERNETICARMOR_AMOUNT 200
 #define DND_RAVAGERARMOR_AMOUNT 150
 
 #define DND_HEALTHEXPSCALE 5
 #define DND_HEALTHCREDITSCALE 15
 #define DND_HEALTHCREDITUPSCALE 2
+#define DND_REGEN_PERCENT 2
+
+#define TALENT_INCREASE 0.075
+#define TALENT_PER_DEX 0.0015
+#define TALENT_PER_INT 0.0015
+#define DND_ARTIFACT_GAIN 0.5
+
+#define DND_EXP_BASEFACTOR 4
+#define DND_CREDIT_BASEFACTOR 5
+#define DND_RESEARCH_MAX_CHANCE 100.0
 
 #define AGAMOTTO_MOVE_WINDOW 1 << 16
 
 #define TEMP_TID 999999
 
+#define DND_MAX_DIGITLEN 7
+
+bool Quest_Pick_Done = 0;
+bool PlayerCanLoad[MAXPLAYERS] = { 0 };
+
 // RPG ELEMENTS END
 
-global int 0: MedkitAmount[];
-global int 2: ShieldAmount[];
-global int 3: MapChanged;
+// thunderstaff info things
+#define DND_THUNDERSTAFF_MAXTARGETS 5
+#define DND_THUNDERSTAFF_DAMAGERTID 32769
+#define DND_THUNDER_RING_TIDSTART 40000
+#define DND_THUNDER_RADIUSPERCOUNT 16
+#define DND_THUNDERSTAFF_BASERANGE 128
+typedef struct dist_tid_pair {
+	int dist;
+	int tid;
+} dist_tid_pair_T;
 
-int screenres1, screenres2;
+enum {
+	DND_WDMG_USETARGET = 1,
+	DND_WDMG_ISOCCULT = 2,
+	DND_WDMG_ISPISTOL = 4,
+	DND_WDMG_ISBOOMSTICK = 8,
+	DND_WDMG_ISSUPER = 16,
+	DND_WDMG_ISSPECIALAMMO = 32,
+	DMG_WDMG_ISARTIFACT = 64,
+	DND_WDMG_USEMASTER = 128,
+	DND_WDMG_SETMASTER = 256,
+	DND_WDMG_USETRACER = 512
+};
+
 int setplayer = 0;
 // see if map changed or not
 
-enum {
-	AMMO_CLIP,
-	AMMO_SHELL,
-	AMMO_ROCKET,
-	AMMO_CELL,
-	AMMO_GRENADE,
-	AMMO_HMISSILE,
-	AMMO_NAIL,
-	AMMO_EXSHELL,
-	AMMO_SOUL,
-	AMMO_EBONY1,
-	AMMO_EBONY2,
-	AMMO_LAVA,
-	AMMO_GAUSS,
-	AMMO_SLAYER,
-	AMMO_PCANNON,
-	AMMO_ION,
-	AMMO_FUEL,
-	AMMO_METEOR,
-    AMMO_LIGHTNING,
-    AMMO_NITROGENCANISTER,
-    AMMO_RIOT
-};
+bool SomeoneDied = 0;
 
-#define MAXAMMOTYPES AMMO_RIOT + 1
-
-str AmmoTypes[MAXAMMOTYPES] = { "Clip",    "Shell",    "RocketAmmo", "Cell",    "Grenades",   "MISAmmo", "Nail",    "ExplodingShell",    "Souls",   "EbonyAmmo", "EbonyAmmoX", "BasiliskAmmo", "GaussRound", "SlayerAmmo", "PCanAmmo", "IonAmmo", "Fuel", "MeteorAmmo", "LightningCell", "NitrogenCanister", "RiotgunShell" };
-str AmmoMaxes[MAXAMMOTYPES] = { "ClipMax", "ShellMax", "RocketMax",  "CellMax", "GrenadeMax", "MISMax",  "NailMax", "ExplodingShellMax", "SoulMax", "EbonyMax",  "EbonyXMax", "BasiliskMax", "GaussMax", "SlayerMax", "PCanAmmoMax", "IonAmmoMax", "FuelMax", "MeteorMax", "LightningCellMax", "NitrogenCanisterMax", "RiotgunShellMax" };
-
-int InitialCapacity[MAXAMMOTYPES] = { 
-	200, 
-	50, 
-	50, 
-	300, 
-	50, 
-	80, 
-	175, 
-	40, 
-	75, 
-	60, 
-	30, 
-	250, 
-	75, 
-	40,
-	35,
-	180,
-	250,
-	40,
-    375,
-    40,
-    160
-};
-
-int CapacityPerBackPack[MAXAMMOTYPES] = {  
-	40,  
-	10,  
-	10,  
-	60,  
-	10,  
-	16,  
-	35,  
-	8, 
-	0, 
-	12, 
-	6, 
-	50, 
-	15, 
-	8,
-	7,
-	36,
-	50,
-	8,
-    75,
-    8,
-    32
-};
-
-int BackpackAmounts[MAXAMMOTYPES] =     {  10,  4,  1,  20,  1,  2,   2,  2, 0, 4, 2, 15, 5, 2, 3, 9, 15, 2, 18, 2, 8 };
-str PickupText[2] = { "\cgPicked up a stimpack", "\cgPicked up a medikit." };
-
-str RailGunTrails[3] = { "RedRayTrail", "YellowRayTrail", "BlueRayTrail" };
-str RailGunDamagers[3] = { "RailDamager_Red", "RailDamager_Yellow", "RailDamager_Blue" };
-
-str TemporaryWeapons[MAXTEMPWEPS] = { "Sawedoff", "Soul Render", "SMG", "Hellforge Cannon", "Bloodfiend Spine", "Enforcer Rifle", "Venom", "Demon Heart", "DarkServantGloves", "Nailgun2" };
-str TemporaryWeaponDrops[MAXTEMPWEPS] = { "SawedoffPickup_D", "SoulRenderPickup_D", "SMGPickup_D", "HellforgePickup_D", "SpinePickup_D", "LaserPickup_D", "VenomPickup_D", "DemonHeartPickup_D", "DarkServantGlovesPickup_D", "Nailgun2Pickup_D" };
-str TemporaryAmmos[MAXTEMPWEPS] = { "SawedoffShell", "BladeHits", "SMGAmmo", "IronBalls", "BloodAmmo", "LaserAmmo", "VenomAmmo", "HeartAmmo", "DarkServantEnergy", "BigNail" };
-str TemporaryWeaponMsg[MAXTEMPWEPS] = { 
-        "\ccWeapon Pickup : \c[Y5]Sawedoff - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Soul Render - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Submachine Gun - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Hellforge Cannon - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Bloodfiend Spine - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Enforcer Laser Rifle - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Venom - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Demon Heart - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Dark Servant Gloves - 9\c-",
-        "\ccWeapon Pickup : \c[Y5]Heavy Nailgun - 9\c-"
-};
+int PlayerWeaponUsed[MAXPLAYERS] = { -1 };
 									  
-str WeaponMsg[7] = 	{  
-						"\ccWeapon Pickup : \c[Y5]Chainsaw - 1\c-",
-						"\ccWeapon Pickup : \c[Y5]Shotgun - 3\c-",
-						"\ccWeapon Pickup : \c[Y5]Super Shotgun - 3\c-",
-						"\ccWeapon Pickup : \c[Y5]Machine Gun - 4\c-",
-						"\ccWeapon Pickup : \c[Y5]Rocket Launcher - 5\c-",
-						"\ccWeapon Pickup : \c[Y5]Plasma Rifle - 6\c-",
-						"\ccWeapon Pickup : \c[Y5]BFG 9000 - 7\c-"
-					};
+str WeaponMsg[7] = 	{
+	"\ccWeapon Pickup : \c[Y5]Chainsaw - 1\c-",
+	"\ccWeapon Pickup : \c[Y5]Shotgun - 3\c-",
+	"\ccWeapon Pickup : \c[Y5]Super Shotgun - 3\c-",
+	"\ccWeapon Pickup : \c[Y5]Machine Gun - 4\c-",
+	"\ccWeapon Pickup : \c[Y5]Rocket Launcher - 5\c-",
+	"\ccWeapon Pickup : \c[Y5]Plasma Rifle - 6\c-",
+	"\ccWeapon Pickup : \c[Y5]BFG 9000 - 7\c-"
+};
 							
 str WeaponPickupText[MAXWEPS] = {  
-									// |                                                                       | 81 characters
-									 "Time to get your hands dirty. Does 10 - 30 damage\nnormally or 180 - 240 with berserk per hit.",
-									 "Open invitiation to the slaughterhouse! Can be\n\cdreplaced.",
-									 "Double the blade, double the fun! Twice as much\ndamage, same firing rate.",
-									 "Sickle steals life from enemies on hit. Does\n35 - 50 damage 3 times. Alt fire swings for\nirreducable 60 - 80 damage 3 times. Altfire\nrequires Close Combat Mastery.",
-									 "Does 100 - 150 damage per swing. Alt fire\ncharges and releases 17 baseballs each doing\n30 - 45 on impact and 64 damage in a 96\nunit radius. Alt fire requires Close Combat Mastery.\n\cfIgnores shields.\c- Can't hit \cughosts.",
-									 "Your trustworthy Colt45, been with you since the\nstart. Does 15 damage in a 0.5 spread.\nCan be \cdreplaced.",
-									 "Akimbo longslides. Does 35 damage per shot in a\n1.25 by 0.5 spread.",
-									 "Magnum is a true classic, shooting bullets\neach doing 170 - 230 damage. Has a capacity of 6.\n50 damage from bullet rip through enemies.\nAlt fire reloads. \cfIgnores shields.",
-									 "Laser Pistol is the fresh invention of UAC. Shoots\nlasers doing 15 - 30 damage in a 2.0 by 1.25 spread.\nsAlt fire charges to do up to a x5 damage rail.\nDoesn't use ammo. \cfIgnores shields.",
-									 "Scatter Pistol shoots 3 pellets each doing\n8 - 16 damage. Pellets scatter to 5 tiny pel-\nlets doing 2- 8 damage. Alt fire shoots one\npellet. \cfIgnores shields.\c- Irreducable damage.",
-									 "Assault Rifle does 18 damage per bullet in a 3.6 by\n2.4 spread. Magazine capacity of 31. Alt fire\nzooms, allowing more precise shots.",
-									 "Typical boomstick, now spreads vertically too.\n9 pellets, each doing 5-10-15 damage.\nCan be \cdreplaced\c-. Can use \cialternate\c- ammo.",
-									 "The purifier shotgun, spread's with 3.6 by 3.6.\n15 pellets, each doing 15 damage. Has a\nshell capacity of 8. Alt fire reloads. Can use\n\cialternate\c- ammo.",
-									 "Killstorm Auto Shotgun, drum fed with 10 shells,\ncan shoot 10 pellets each doing 15 damage in a\n7.2 by 5.2 spread. Alt fire reloads.",
-									 "Deadlocks fires 16 pellets doing 15 damage in a 4.8\nby 3.6 spread. Has a shell capacity of 12. Can use\n\cialternate\c- ammo.",
-									 "Fires shots that do 210 ice damage. Alt fire shoots\na blast of nitrogen 384 units ahead, creating\n4 series of icy gas streams doing 5 damage.",
-                                     "Same old buckshot we all love! Can be \cdreplaced.",
-									 "Heavy Super Shotgun shoots 24 pellets doing 15\ndamage in a 9.6 by 5.8 spread. 8 of these rip\nthrough targets.",
-									 "Erasus shotgun shoots highly ballistic shells\nwith 16 pellets each doing 15 damage. Has to\nreload after shooting twice. Alt fire shoots\nboth shells in the chamber, or reloads.",
-									 "Fires 24 plasma balls in a circular fashion\neach doing 20 damage. Does irreducable\ndamage. Has a clip size of 5.",
-									 "The explosive shotgun, the best there is. Fires\n10 pellets, each doing 15 on hit. Each pellet\ndoes 32-48 damage in a small area. Does self\ndamage. \cfIgnores shields.",
-									 "Slayer creates 6 blades each doing 9 damage\nand rip through. Alt fire detonates blades at\nwill for 90 damage in a 96 unit radius, \cfignoring\n\cfshields\c-. Blades return to you after travelling a bit.\nCan't hit \cughosts.",
-									 "An accurate and a very reliable weapon.\nEach bullet does 15 damage. Alt fire reloads.\nClip size is 50. Can be \cdreplaced\c-. Can use\n\cialternate\c- ammo.", 
-									 "Finest machine guns UAC has to offer. Bullets\ndo 25 damage in a 1.6 by 0.8 spread.\nClip size is 60. Can zoom.",
-									 "Lead Spitter is a super sonic bullet shooter\nshooting 2 bullets doing 18 damage in a\n6.4 by 4.8 spread. Clip size is 75.\n\cfIgnores shields.",
-									 "Templar fires silver bullets doing 20 damage\nin a 4.4 by 2.8 spread. Bullets deal x3 damage\nto undead and magical enemies. Clip size of 40.\nCan use \cigrenades\c-.",
-									 "Fires 7 pellets doing 12 damage in a 3.6 by 3.6\nspread. Alt fire makes it full auto, but\ntwice as inaccurate. Can use \cialternate\c- ammo.\nReload when full to use other ammo.",
-                                     "Stronger, faster and better than ever! Poor\naccuracy, shoots tracers that do 16 - 28 damage\neach. Alt fire to spin. Can't hit \cughosts.",
-									 "The ebony cannon shoots bouncing balls of death.\n16 - 40 damage with 48 explosion damage in 64\nunits. Alt fire shoots scatter bombs.\n\cfIgnores shields.",
-									 "A true classic. Just don't blow yourself up.\nCan be \cdreplaced. Can't hit \cughosts.",
-									 "The Torpedo Launcher shoots fast torpedos each\ndoing 180 - 220 damage on impact and 224\ndamage in a 128 unit radius. Can't hit \cughosts.",
-									 "Mercury Launcher fires accelerating and heat\nseeking mercury missiles doing 256 - 320 damage on\nhit and 192 damage in a 160 unit radius over\n2 seconds. Can't hit \cughosts.",
-									 "Fires a meteor doing 200 on impact and 192\nin a 192 unit radius. The meteor then splits into\nsmaller pieces, and those pieces as well. Main\nmeteor \cfignores shields\c-.",
-									 "Useful for when you can't reach around corners.\nDoes 80 damage on impact and 128 damage in a\n144 unit radius. Can be \cdreplaced\c-. Can't\nhit \cughosts\c-. Can use \cialternate\c- ammo.",
-									 "The UAC Rotary Grenade Launcher does 192\ndamage on impact and 192 damage on a 192 unit\nradius. Can't hit \cughosts",
-									 "Top of the food chain for rockets. Shoots two\nhoming rockets each doing 160 damage both on\nimpact and explosion. Can't hit \cughosts.",
-									 "Best friend of the trigger happy.\nCan be \cdreplaced.",
-									 "Improved with a nuclear reactor, does 36 - 60 on\nhit and 10 - 30 explosion damage in a 48 unit\nradius. Can \cgoverheat\c-. Does self damage.",
-									 "Turel Cannon fires highly ionized particles\ndoing 125 damage ripping through everything.\nContinuous fire is less accurate and does 80\ndamage. Has a range of 768 units. Altfire\nfires focused shots.",
-									 "Flamethrower does what it says and throws\nflames doing 1 - 8 damage. When they hit, they\nleave a trail of flame doing 5 damage every 2 tics.\nFuel size of 75.",
-									 "UAC offers this shockingly deadly weapon\nthat can shoot lightning doing 11-15 damage. Alt\nfire shoots forked lightning. Keep firing and da-\nmage increases by 4% per stack. Stacks additively.",
-                                     "An interesting demonic artifact shooting nails.\nEach nail does 8 - 16 damage and rips through.\nAlt fire shoots explosive lava nails that\n\cfignores shields.\c- Can't hit \cughosts.",
-									 "Basilisk is said to be the ancient weapon of\nhell's most elite warriors. If not loaded, shoots\nfire balls doing 5 - 40 damage. If loaded, shoots\nmeteors doing 60 - 120 on impact and 96 explosion\ndamage. \cf Ignores shields.",
-									 "BFG 6000, an older model but still capable.\nCan be \cdreplaced.\cf Ignores shields.",
-									 "The newest BFG model 32768, devastates\nwith 600 / 900 damage on impact and 384\ndamage in a 160 unit radius. Also shoots 64 tracers\ninstead of 40.",
-									 "Devastator launches three mini rockets each\ndoing 32 to 80 with 32 radius damage in 72\nunits. Can't hit \cughosts. \c-\cfIgnores shields.",
-									 "Fires a destructive orb doing 400 - 600 damage\non impact and 384 damage in a 768\nunit radius. Creates 6 smaller explosions doing\n250 damage on impact and 192 damage in a\n256 unit radius. \cfIgnores shields.",
-									 "Fires ionized energy doing 100 impact and 96\narea damage in 160 unit radius. Can \cgoverheat\c-.\n\cfIngores shields\c-. Can't hit \cughosts\c-.",
-									 "Gauss Rifle fires a magnetic pulse dealing 100\ndirect hit damage and 192 radius damage in a\n96 unit radius. Alt fire zooms and amplifies the\ndamage for each zoom. Can't hit \cughosts.\c-\n\cfIgnores shields.",
-									 "This baby can rip through concrete with ease.\nEach shot does multiples of 92. Alt fire charges up\nthe next shot up to 2 times. \cfIgnores shields.",
-									 "A magical staff, using demon souls as energy.\nFires meteors of magic, bursting on impact. Alt\nfire fires 3 columns of fire both on floor and\nceiling that travel and explode in flames.\n\cfIgnores shields.",
-									 "This once was the ribcage of a powerful demon.\nFires magical bone shards that rip through.\nAlt fire switches the mode to shoot three\ndemon shredders that seek demons.",
-									 "This holy relic was lost in ancient battles.\nFires sun beams to burn anything. Alt fire\nchannels the very essence of sun causing a\nmassive meltdown. \cfIgnores shields\c-.",
-									 "Soul Reaver creates portals that lead to hungry\nghosts that devour their enemies. Hold to gain\na deflective shield. \cfIgnores shields.",
-									 
-                                     "The sawedoff is a western classic. Fires 16\npellets each doing 15 damage.\n\ceTemporary Weapon.",
-									 "Soul Render is an unholy melee weapon.\nEach hit makes the weapon become less durable.\nAlt fire toggles life drain mode.\n\ceTemporary Weapon.",
-									 "A standard UAC submachine gun. Each bullet\ndoes 15 damage.\n\ceTemporary Weapon.",
-									 "The arm-cannon of a Corpulent. Shoots\nmetallic cannon balls that split on impact.\nAlt fire shoots tiny ripping cannon balls.\n\ceTemporary Weapon.",
-									 "The spine of a Bloodfiend. Shoots tiny\nexplosive pukes. Alt fire changes it\nto a limited range hitscan.\n\ceTemporary Weapon.",
-									 "The laser rifle shoots a laser or two, if using alt\nfire, each doing 20-45 damage. \cfIgnores\n\cfshields. \ceTemporary Weapon.",
-									 "The torso of a Vulgar. Shoots acidic bones.\nAlt fire shoots bouncing acid bombs.\nCan't hit \cughosts\c-.\n\ceTemporary Weapon.",
-									 "A demon heart. Squeeze to damage all enemies\n in an area.\cfIgnores shields.\n\ceTemporary Weapon.",
-                                     "Gloves of a dark servant. Can shoot pain enforcing\nlightning bolts doing 60-90 damage. Alt fire shoots a\nhoming explosive lightning ball doing 120-180\ndamage on hit and 96 area damage over 9 tics.\n\ceTemporary Weapon.",
-                                     "A nail-chaingun, quite useful for mass murder of\ndemons. Shoots nails ripping for 16-32 damage.\n\ceTemporary Weapon.",
-                                };							
+	 "Time to get your hands dirty. Does 10 - 30 damage normally or 180 - 240 with berserk per hit.",
+	 "Open invitiation to the slaughterhouse! Can be \cdreplaced.",
+	 "Double the blade, double the fun! Twice as much damage, same firing rate.",
+	 "Sickle steals life from enemies on hit. Does 35 - 50 damage 3 times. Alt fire swings for irreducable 60 - 80 damage 3 times. Altfire requires Close Combat Mastery.",
+	 "Does 80 - 120 damage per swing. Alt fire charges and releases 17 baseballs each doing 50 - 150 on impact and 96 damage in a 128 unit radius. Alt fire requires Close Combat Mastery. \cfIgnores shields.\c- Can't hit \cughosts.",
+	 "Does 100 - 400 damage per swing depending on how long you hold. Alt fire makes you shoot ripping slashes doing 24 damage in a 104 unit radius, run 15% faster but can't change weapons. Alt fire requires Close Combat Mastery.",
+	 "60 - 240 damage per swing with 48 - 192 additional damage in a 96 unit radius. Alt fire shoots 5 flames doing 40 - 80 on hit and 192 - 240 damage in a 160 unit radius. Alt fire requires Close Combat Mastery. Can't hit \cughosts.",
+	 
+	 "Your trustworthy Colt45, been with you since the start. Does 15 damage in a 0.5 spread. Can be \cdreplaced.",
+	 "Akimbo longslides. Does 35 damage per shot in a 1.25 by 0.5 spread.",
+	 "Magnum is a true classic, shooting bullets each doing 170 - 230 damage. Has a capacity of 6. 50 damage from bullet rip through enemies. Alt fire reloads. \cfIgnores shields.",
+	 "Laser Pistol is the fresh invention of UAC. Shoots lasers doing 15 - 30 damage in a 2.0 by 1.25 spread. sAlt fire charges to do up to a x5 damage rail. Doesn't use ammo. \cfIgnores shields.",
+	 "Assault Rifle does 25 damage per bullet in a 3.6 by 2.4 spread. Magazine capacity of 31. Alt fire zooms, allowing more precise shots.",
+	 "Summons mobile viper traps, jumping on enemies doing 60-100 damage in 128 unit radius. They expire after 10 seconds. Alt fire shoots slithering vipers doing 90-150 damage, \cfignoring shields\c- but can't hit \cughosts.",
+	 "Casts 3 flames doing 10-40 damage each. Alt fire casts a flame circle at most 384 units away doing 25 initial damage and creating 8 flames doing 32-64 damage on hit and 24 radius damage in 24 units. Can't hit \cughosts.",
+	 "Scatter Pistol shoots 3 pellets each doing 8 - 16 damage. Pellets scatter to 5 tiny pellets doing 2- 8 damage. Alt fire shoots one pellet. \cfIgnores shields.\c- Irreducable damage.",
+	 
+	 "Typical boomstick, now spreads vertically too. 9 pellets, each doing 10-15 damage. Can be \cdreplaced\c-. Can use \cialternate\c- ammo.",
+	 "The purifier shotgun, spread's with 3.6 by 3.6. 15 pellets, each doing 15 damage. Has a shell capacity of 8. Alt fire reloads. Can use \cialternate\c- ammo.",
+	 "Killstorm Auto Shotgun, drum fed with 12 shells, can shoot 10 pellets each doing 15 damage in a 7.2 by 5.2 spread. Alt fire reloads.",
+	 "Deadlocks fires 16 pellets doing 15 damage in a 7.0 by 5.2 spread. Has a shell capacity of 12. Can use \cialternate\c- ammo.",
+	 "Fires shots that do 210 ice damage. Alt fire shoots a blast of nitrogen 384 units ahead, creating 4 series of icy gas streams doing 5 damage.",
+	 "Same old buckshot we all love! Can be \cdreplaced.",
+	 "Heavy Super Shotgun shoots 24 pellets doing 15 damage in a 9.6 by 5.8 spread. 8 of these rip through targets.",
+	 "Erasus shotgun shoots highly ballistic shells with 18 pellets each doing 15 damage. Has to reload after shooting twice. Alt fire shoots both shells in the chamber, or reloads.",
+	 "Fires 24 plasma balls in a circular fashion each doing 20 damage. Does irreducable damage. Has a clip size of 5.",
+	 "Shoots 18 shells each doing 15 damage and forcing pain. Overheats when used. Altfire releases a portion of it, dealing 108-180 damage in 96 unit radius. \cfIgnores shields.",
+	 
+	 "The explosive shotgun, the best there is. Fires 10 pellets, each doing 15 on hit. Each pellet does 32-48 damage in a small area. Does self damage. \cfIgnores shields.",
+	 "Slayer creates 6 blades each doing 10 damage and rip through. Alt fire detonates blades at will for 100 damage in a 108 unit radius, \cfignoring \cfshields\c-. Blades return to you after travelling a bit. Can't hit \cughosts.",
+	 
+	 "An accurate and a very reliable weapon. Each bullet does 15-20 damage. Alt fire reloads. Clip size is 50. Can be \cdreplaced\c-. Can use \cialternate\c- ammo.", 
+	 "Finest machine guns UAC has to offer. Bullets do 25 damage in a 1.6 by 0.8 spread. Clip size is 60. Can zoom.",
+	 "Lead Spitter is a super sonic bullet shooter shooting 2 bullets doing 18 damage in a 6.4 by 4.8 spread. Clip size is 75. \cfIgnores shields.",
+	 "Templar fires silver bullets doing 20 damage in a 4.4 by 2.8 spread. Bullets deal x3 damage to undead and magical enemies. Clip size of 40. Can use \cigrenades\c-.",
+	 "Fires 7 pellets doing 12 damage in a 3.6 by 3.6 spread. Alt fire makes it full auto, but twice as inaccurate. Can use \cialternate\c- ammo. Reload when full to use other ammo.",
+	 "Fires bullets doing 15 damage on hit and 5-15 damage in a 40 unit radius. Alt fire shoots a bolt that sticks to enemies, detonating after 3 seconds for 64 damage and release toxic cloud doing 5-15 damage in 96 unit radius.",
+	 "Stronger, faster and better than ever! Poor accuracy, shoots tracers that do 16 - 28 damage each. Alt fire to spin. Can't hit \cughosts.",
+	 "The ebony cannon shoots bouncing balls of death. 16 - 40 damage with 48 explosion damage in 64 units. Alt fire shoots scatter bombs. \cfIgnores shields.",
+	 
+	 "A true classic. Just don't blow yourself up. Can be \cdreplaced. Can't hit \cughosts.",
+	 "The Torpedo Launcher shoots fast torpedos each doing 180 - 220 damage on impact and 224 damage in a 128 unit radius. Can't hit \cughosts.",
+	 "Mercury Launcher fires accelerating and heat seeking mercury missiles doing 256 - 320 damage on hit and 192 damage in a 160 unit radius over 2 seconds. Can't hit \cughosts.",
+	 "Fires a meteor doing 200 on impact and 192 in a 192 unit radius. The meteor then splits into smaller pieces, and those pieces as well. Main meteor \cfignores shields\c-.",
+	 "Fires grenades doing 128 on impact and 128 in a 128 unit radius. The grenade explodes into shrapnels ripping through doing 6-18 damage. Alt fire loads more grenades in the chamber. At most 3 additional grenades. Can't hit \cughosts.",
+	 "Launches a ball of ice that does 150 damage on impact. After some time it'll stop and explode doing 150 damage in 176 unit radius, releasing many ice particles around each doing 3-9 damage, ripping through enemies. They also explode and do 36 damage in 64 unit radius. Can \cgoverheat\c-.",
+	 "Useful for when you can't reach around corners. Does 80 damage on impact and 128 damage in a 144 unit radius. Can be \cdreplaced\c-. Can't hit \cughosts\c-. Can use \cialternate\c- ammo.",
+	 "The UAC Rotary Grenade Launcher does 192 damage on impact and 192 damage on a 192 unit radius. Can't hit \cughosts",
+	 "Top of the food chain for rockets. Shoots two homing rockets each doing 160 damage both on impact and explosion. Can't hit \cughosts.",
+	 
+	 "Best friend of the trigger happy. Can be \cdreplaced.",
+	 "Improved with a nuclear reactor, does 36 - 60 on hit and 10 - 30 explosion damage in a 48 unit radius. Can \cgoverheat\c-. Does self damage.",
+	 "Turel Cannon fires highly ionized particles doing 125 damage ripping through everything. Continuous fire is less accurate and does 80 damage. Has a range of 768 units. Altfire fires focused shots.",
+	 "Launches 5 ice shards doing 15 - 30 damage in a 7.5 by 7.5 spread. Alt fire launches a glacial orb launching ice shards all around with itself doing 6-9 damage and rips through enemies. Can't hit \cughosts.",
+	 "Flamethrower does what it says and throws flames doing 1 - 8 damage. When they hit, they leave a trail of flame doing 5 damage every 2 tics. Fuel size of 75.",
+	 "UAC offers this shockingly deadly weapon that can shoot lightning doing 9-12 damage. Alt fire shoots forked lightning. Keep firing and da- mage increases by 4% per stack. Stacks additively.",
+	 "An interesting demonic artifact shooting nails. Each nail does 13 - 21 damage and rips through. Alt fire shoots explosive lava nails that \cfignores shields.\c- Can't hit \cughosts.",
+	 "Basilisk is said to be the ancient weapon of hell's most elite warriors. If not loaded, shoots fire balls doing 18 - 48 damage. If loaded, shoots meteors doing 72 - 144 on impact and 96 explosion damage. \cf Ignores shields.",
+	 
+	 "BFG 6000, an older model but still capable. Can be \cdreplaced.\cf Ignores shields.",
+	 "The newest BFG model 32768, devastates with 600 / 900 damage on impact and 384 damage in a 160 unit radius. Also shoots 64 tracers instead of 40.",
+	 "Devastator launches four mini rockets each doing 32 to 80 with 32 radius damage in 72 units. Can't hit \cughosts. \c-\cfIgnores shields.",
+	 "Fires a destructive orb doing 600 damage on impact and 384 damage in a 768 unit radius. Creates 6 smaller explosions doing 250 damage on impact and 192 damage in a 256 unit radius. \cfIgnores shields.",
+	 "Fires ionized energy doing 125 impact and 128 area damage in 160 unit radius. Can \cgoverheat\c-. \cfIngores shields\c-. Can't hit \cughosts\c-.",
+	 "Launches a ball of lightning that zaps 5 nearest enemies for 100 damage in 512 units. On impact deals 250-500 and 250 radius damage in 96 units. Altfire zaps all enemies in 768 units for 500 on impact and 250 in 256 units, \cfignoring shields.",
+	 "Gauss Rifle fires a magnetic pulse dealing 100 direct hit damage and 192 radius damage in a 96 unit radius. Alt fire zooms and amplifies the damage for each zoom. Can't hit \cughosts.\c- \cfIgnores shields.",
+	 "This baby can rip through concrete with ease. Each shot does multiples of 92. Alt fire charges up the next shot up to 2 times. \cfIgnores shields.",
+	 
+	 "A magical staff, using demon souls as energy. Fires meteors of magic, bursting on impact. Alt fire fires 3 columns of fire both on floor and ceiling that travel and explode in flames. \cfIgnores shields.",
+	 "This once was the ribcage of a powerful demon. Fires magical bone shards that rip through. Alt fire switches the mode to shoot three demon shredders that seek demons.",
+	 "This holy relic was lost in ancient battles. Fires sun beams to burn anything. Alt fire channels the very essence of sun causing a massive meltdown. \cfIgnores shields\c-.",
+	 "Soul Reaver creates portals that lead to hungry ghosts that devour their enemies. Hold to gain a deflective shield. \cfIgnores shields.",
+	 
+	 "The sawedoff is a western classic. Fires 16 pellets each doing 15 damage. \ceTemporary Weapon.",
+	 "Soul Render is an unholy melee weapon. Each hit makes the weapon become less durable. Alt fire toggles life drain mode. \ceTemporary Weapon.",
+	 "A standard UAC submachine gun. Each bullet does 15 damage. \ceTemporary Weapon.",
+	 "The arm-cannon of a Corpulent. Shoots metallic cannon balls that split on impact. Alt fire shoots tiny ripping cannon balls. \ceTemporary Weapon.",
+	 "The spine of a Bloodfiend. Shoots tiny explosive pukes. Alt fire changes it to a limited range hitscan. \ceTemporary Weapon.",
+	 "The laser rifle shoots a laser or two, if using alt fire, each doing 20-45 damage. \cfIgnores \cfshields. \ceTemporary Weapon.",
+	 "The torso of a Vulgar. Shoots acidic bones. Alt fire shoots bouncing acid bombs. Can't hit \cughosts\c-. \ceTemporary Weapon.",
+	 "A demon heart. Squeeze to damage all enemies  in an area.\cfIgnores shields. \ceTemporary Weapon.",
+	 "Gloves of a dark servant. Can shoot pain enforcing lightning bolts doing 60-90 damage. Alt fire shoots a homing explosive lightning ball doing 120-180 damage on hit and 96 area damage over 9 tics. \ceTemporary Weapon.",
+	 "A nail-chaingun, quite useful for mass murder of demons. Shoots nails ripping for 16-32 damage. \ceTemporary Weapon.",
+	 "True classic, in akimbo fashion too! Shoots bullets doing 10-30 damage each. \ceTemporary Weapon.",
+	 "Can blast foes with plasma doing 24-40 damage with 35 explosion damage. Alt fire can shoot a ripping version of this same plasma. \ceTemporary Weapon."
+};							
 	
 #define MAX_SPREE_TEXT 16
 str SpreeText[MAX_SPREE_TEXT] = {
@@ -288,19 +243,6 @@ str SpreeText[MAX_SPREE_TEXT] = {
 	"Legendary"
 };
 
-#define MAXWEPUPGRADES 5
-#define MAXNORMALWEPSLOTS 8
-str SlotWeapons[8][MAXWEPUPGRADES] = {
-	{ " Chainsaw ", "Upgraded Chainsaw", "Sickle", "Excalibat", "" },
-	{ "Magnum", " Akimbo Pistols ", "Laser Pistol", "ResPistol1", "" },
-	{ " Shotgun ", "Upgraded Shotgun", "Upgraded Shotgun2", "ResShotgun1", "ResShotgun2" },
-	{ " Super Shotgun ", "Upgraded Super Shotgun", "Upgraded Super Shotgun2", "ResSSG1", "" },
-	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "ResMG1", "ResMG2" },
-	{ "Rocket Launcher", "Upgraded Rocket Launcher", "Upgraded Rocket Launcher2", "ResRL1", "" },
-	{ "Plasma Rifle", "Upgraded Plasma Rifle", "Upgraded Plasma Rifle2", "ResPlasma1", "ResPlasma2" },
-	{ "BFG 9000", "Upgraded BFG 9000", "Devastator", "MFG", "ResBFG1" },
-};
-
 #define AMMODISPLAY_ID 1000
 
 int CurrentLevelReward[MAXPLAYERS];
@@ -309,43 +251,9 @@ int CurrentStatReward[MAXPLAYERS];
 #define MAXCREDITDROPS 3
 int CreditDroppers[MAXCREDITDROPS] = { "SmallCreditDropper", "MediumCreditDropper", "LargeCreditDropper" };
 int CreditDropThresholds[MAXCREDITDROPS] = { 500, 1500, 0x7FFFFFFF };
-int CreditDropChances[MAXCREDITDROPS] = { 20, 25, 30 };
+int CreditDropChances[MAXCREDITDROPS] = { 0.2, 0.25, 0.3 };
 
-int SpecialFXRunning[MAXPLAYERS];
-
-function int CheckBit(int x, int n) {
-	return x & (1 << n);
-}
-
-function int ResetBits(int val, int begin, int end) {
-	for(int i = begin; i < end + 1; ++i)
-		val &= ~(1 << i);
-	return val;
-}
-
-function int CheckSlotWeapon(int slot) {
-	for(int i = 0; i < MAXWEPUPGRADES; ++i)
-		if(StrLen(SlotWeapons[slot - 1][i]) && CheckInventory(SlotWeapons[slot - 1][i]))
-			return 1;
-	return 0;
-}
-
-function int GetWeaponPosFromTable(str wepname) {
-	for(int i = 0; i < MAXWEPS; ++i)
-		if(!StrCmp(wepname, Weapons[i][WEPINFO_NAME]))
-			return i;
-	return 0;
-}
-
-function int GetHealthCap(void) {
-	return DEFENSE_BONUS * CheckInventory("PSTAT_Vitality");
-}
-
-function int GetHealthMax(void) {
-    return 100 + GetHealthCap();
-}
-
-function int GetAspectRatio(void) {
+int GetAspectRatio(void) {
 	int width = getcvar("vid_defwidth");
 	int height = getcvar("vid_defheight");
 	int nowidescreen = getcvar("vid_nowidescreen");
@@ -379,15 +287,7 @@ function int GetAspectRatio(void) {
 	return ASPECT_4_3;
 }
 
-function int Calculate_Stats() {
-	return CheckInventory("PSTAT_Strength") + CheckInventory("PSTAT_Dexterity") + CheckInventory("PSTAT_Bulkiness") + CheckInventory("PSTAT_Vitality") + CheckInventory("PSTAT_Charisma");
-}
-
-function int Calculate_Perks() {
-	return CheckInventory("Perk_Munitionist") + CheckInventory("Perk_Sharpshooting") + CheckInventory("Perk_Wisdom") + CheckInventory("Perk_Greed") + CheckInventory("Perk_Endurance") + CheckInventory("Perk_Medic");
-}
-
-function void Reset_RPGInfo (int resetflags) {
+void Reset_RPGInfo (int resetflags) {
 	if(resetflags & RESET_LEVEL) {
 		SetInventory("Exp", 0);
 		SetInventory("LevelExp", 0);
@@ -403,21 +303,20 @@ function void Reset_RPGInfo (int resetflags) {
 		SetInventory("PSTAT_Vitality", 0);
 		SetInventory("PSTAT_Charisma", 0);
 		SetInventory("PSTAT_Bulkiness", 0);
+		SetActorProperty(0, APROP_HEALTH, DND_BASE_HEALTH);
 	}
 	
 	if(resetflags & RESET_PERKS) {
-		TakeInventory(StrParam(s:"Damage_Perk_", d:CheckInventory("Perk_Sharpshooting") * 5), 1);
-		TakeInventory(StrParam(s:"Resist_Perk_", d:CheckInventory("Perk_Endurance") * 5), 1);
-		SetInventory("Perk_Sharpshooting", 0);
-		SetInventory("Perk_Endurance", 0);
-		SetInventory("Perk_Wisdom", 0);
-		SetInventory("Perk_Greed", 0);
-		SetInventory("Perk_Medic", 0);
-		SetInventory("Perk_Munitionist", 0);
+		if(CheckInventory("Perk_Sharpshooting"))
+			TakeInventory(StrParam(s:"Damage_Perk_", d:CheckInventory("Perk_Sharpshooting") * 5), 1);
+		if(CheckInventory("Perk_Endurance"))
+			TakeInventory(StrParam(s:"Resist_Perk_", d:CheckInventory("Perk_Endurance") * 5), 1);
+		for(int i = DND_PERK_BEGIN; i < DND_PERKS; ++i)
+			SetInventory(StatNames[i], 0);
 	}
 }
 
-function int CheckLevelUp (void) {
+int CheckLevelUp (void) {
 	int curlevel = GetStat(STAT_LVL), exptemp;
 	// -1 because initial level is 1
 	while(curlevel < MAXLEVELS && GetStat(STAT_EXP) >= LevelCurve[GetStat(STAT_LVL) - 1]) {
@@ -425,6 +324,10 @@ function int CheckLevelUp (void) {
 		if(!((GetStat(STAT_LVL) + 1) % 5)) { // multiples of 5 give perk
 			GiveInventory("PerkPoint", 1);
 			GiveInventory("PerkedUp", 1);
+		}
+		if(!((GetStat(STAT_LVL) + 1) % DND_TALENTPOINT_MARK)) {
+			GiveInventory("TalentPoint", 1);
+			GiveInventory("TalentedUp", 1);
 		}
 		GiveInventory("Level", 1);
 		SetAmmoCapacity("ExpVisual", LevelCurve[GetStat(STAT_LVL) - 1]);
@@ -435,7 +338,7 @@ function int CheckLevelUp (void) {
 	return GetStat(STAT_LVL) - curlevel;
 }
 
-function int DnD_MessageY() {
+int DnD_MessageY() {
 	int res = 34.1;
 	if(CheckInventory("DnD_ShowKillBonus"))
 		res += 16.0;
@@ -503,7 +406,7 @@ enum {
 };
 
 // 5 Tiers: 0 -> Very Easy, 1 -> Easy, 2 -> Medium, 3 -> Hard and 4 -> Very Hard.
-function void CalculateMapDifficulty() {
+void CalculateMapDifficulty() {
 	int factor = 0;
 	// yes this is ugly but it won't ever change, no new spawners will come etc so why not :)
 	factor += ThingCountName("ZombiemanSpawner", 0) * DND_ZOMBIE_CONTRIB;
@@ -558,10 +461,10 @@ enum {
 	BONUS_BONUS,
 	BONUS_EXP_RATE = 5,
 	BONUS_CREDIT_RATE = 250,
-	BONUS_SECRET_RATE = 1,
+	BONUS_SECRET_RATE = 3,
 };
 
-function int CalculateBonus(int bonustype) {
+int CalculateBonus(int bonustype) {
 	if(bonustype == BONUS_KILL) {
 		// add 5% for each difficulty level
 		return BONUS_EXP_RATE * (MapDifficulty + 1);
@@ -571,7 +474,7 @@ function int CalculateBonus(int bonustype) {
 		return BONUS_CREDIT_RATE * (MapDifficulty + 1);
 	}
 	else if(bonustype == BONUS_SECRET) {
-		// add 1 stat point for each difficulty level
+		// add 2 budget for each difficulty level
 		return BONUS_SECRET_RATE * (MapDifficulty + 1);
 	}
 	else if(bonustype == BONUS_BONUS) {
@@ -580,14 +483,21 @@ function int CalculateBonus(int bonustype) {
 	return 1;
 }
 
-function int IsUsingMeleeWeapon() {
-	return CheckWeapon(" Fists ") || CheckWeapon(" Chainsaw ") || CheckWeapon("Upgraded Chainsaw") || CheckWeapon("Sickle") || CheckWeapon("Excalibat") || CheckWeapon("Soul Render");
+int IsUsingMeleeWeapon() {
+	return CheckWeapon(" Fists ") || 
+		   CheckWeapon(" Chainsaw ") || 
+		   CheckWeapon("Upgraded Chainsaw") || 
+		   CheckWeapon("Sickle") || 
+		   CheckWeapon("Excalibat") || 
+		   CheckWeapon("Soul Render") ||
+		   CheckWeapon("ResMelee1") ||
+		   CheckWeapon("ResMelee2");
 }
 
 // Hardcore Info
 #define DND_HARDCORE_INVALID 0
 #define DND_HARDCORE_VALID 1
-#define MAXFLAGS 26
+#define MAXFLAGS 27
 str FlagCheckList[MAXFLAGS] = {
 	"sv_maxlives",
 	"sv_coop_damagefactor",
@@ -614,11 +524,13 @@ str FlagCheckList[MAXFLAGS] = {
 	"SV_InfiniteInventory",
 	"SV_NoAutomap",
 	"SV_NoAutomapAllies",
-	"Compat_ClientsSendFullButtonInfo"
+	"Compat_ClientsSendFullButtonInfo",
+	"Survival"
 };
 
+#define DND_HARDCORE_MAXLIVES 1
 int FlagAcceptedValues[MAXFLAGS] = {
-	2,
+	DND_HARDCORE_MAXLIVES,
 	1.0,
 	0,
 	0,
@@ -643,18 +555,19 @@ int FlagAcceptedValues[MAXFLAGS] = {
 	0,
 	0,
 	0,
+	1,
 	1
 };
 
-#define MAXDNDFLAGS 39
+#define MAXDNDFLAGS 47
 str DNDFlagCheckList[MAXDNDFLAGS] = {
 	"dnd_monsterbars",
 	"dnd_monsterscale",
 	"dnd_sharexp",
 	"dnd_sharecredit",
 	"dnd_healonlevelup",
-	"dnd_bossfights",
 	"dnd_killspree",
+	
 	"dnd_firstbackpackold",
 	"dnd_playercount_scales_monsters",
 	"dnd_fullshare",
@@ -664,8 +577,9 @@ str DNDFlagCheckList[MAXDNDFLAGS] = {
 	"dnd_allresearchesfound",
 	"dnd_disablelevelbonus",
     "dnd_usesmartmonsterspawner",
-    "dnd_healthbasedexp",
-    "dnd_healthbasedcredit",
+    "dnd_enable_quests",
+	"dnd_enable_elites",
+	"dnd_enable_limiteditems",
 	
 	"dnd_shop_scale",
 	"dnd_shop_wep_scale",
@@ -674,12 +588,23 @@ str DNDFlagCheckList[MAXDNDFLAGS] = {
 	"dnd_shop_ability_scale",
 	"dnd_shop_talent_scale",
 	"dnd_shop_armor_scale",
+	
 	"dnd_monsterlevel_low",
 	"dnd_monsterlevel_high",
 	"dnd_respawn_count",
 	"dnd_accessory_droprate",
 	"dnd_credit_droprateadd",
 	"dnd_gainrange",
+	
+	"dnd_orb_dropchanceadd",
+	"dnd_quest_chance",
+	"dnd_quest_avglevel",
+	"dnd_elite_spawnchance",
+	"dnd_elite_spawnlevel",
+	"dnd_elite_runedrop_chance",
+	"dnd_legendary_chance",
+	"dnd_limitedrespawn_amount",
+	
 	"dnd_exp_scale",
 	"dnd_credit_scale",
 	"dnd_accessorylevel",
@@ -697,7 +622,7 @@ int DNDFlagAcceptedValues[MAXDNDFLAGS] = {
 	1,
 	0,
 	1,
-	1,
+	
 	0,
 	1,
 	1,
@@ -708,7 +633,8 @@ int DNDFlagAcceptedValues[MAXDNDFLAGS] = {
 	0,
     1,
     1,
-    1,
+	1,
+	1,
 	
 	1,
 	1,
@@ -717,92 +643,143 @@ int DNDFlagAcceptedValues[MAXDNDFLAGS] = {
 	1,
 	1,
 	1,
+	
 	1,
-	2,
+	6,
 	3,
-	3,
+	6,
 	0,
 	768,
+	
+	0,
+	20,
+	25,
+	10,
+	10,
+	15,
 	1,
-	1,
+	2,
+	
+	2,
+	2,
 	20,
 	24,
-	4,
 	5,
-	0.04,
-    1
+	5,
+	0.05,
+    1.0
 };
 
 // Checks pre-defined settings for hardcore mode that has character saving
 // returns 1 if succeeded, 0 if failed
-function int CheckHardcoreSettings() {
+int CheckHardcoreSettings() {
 	// check all flags compare with default values
 	int i;
 	for(i = 0; i < MAXFLAGS; ++i) {
 		if(GetCVar(FlagCheckList[i]) != FlagAcceptedValues[i]) {
-			Log(s:"\"", s:FlagCheckList[i], s:"\" should be set to ", d:FlagAcceptedValues[i], s:" for \cghardcore\c- mode to work!");
+			Log(s:"\"", s:FlagCheckList[i], s:"\" should be set to ", d:FlagAcceptedValues[i], s:" for \cghardcore\c- mode to work! It is set to: ", d:GetCVar(FlagCheckList[i]));
 			return DND_HARDCORE_INVALID;
 		}
 	}
-	for(int i = 0; i < MAXDNDFLAGS; ++i) {
+	for(i = 0; i < MAXDNDFLAGS; ++i) {
 		if(GetCVar(DNDFlagCheckList[i]) != DNDFlagAcceptedValues[i]) {
-			Log(s:"\"", s:DNDFlagCheckList[i], s:"\" should be set to ", d:DNDFlagAcceptedValues[i], s:" for \cghardcore\c- mode to work!");
+			Log(s:"\"", s:DNDFlagCheckList[i], s:"\" should be set to ", d:DNDFlagAcceptedValues[i], s:" for \cghardcore\c- mode to work! It is set to: ", d:GetCVar(DNDFlagCheckList[i]));
 			return DND_HARDCORE_INVALID;
 		}
 	}
 	return DND_HARDCORE_VALID;
 }
 
-// These are only used when monster file is employed
-// First element on each list is the "Vanilla" monster, rest follow from their variations with Var1 to VarX
-#define MAX_MONSTER_CATEGORIES 17
-#define MAX_MONSTER_VARIATIONS 15
-int Monster_Weights[MAX_MONSTER_CATEGORIES][MAX_MONSTER_VARIATIONS] = {
-    // Zombieman
-    { 16, 16, 8, 12, 8, 8, 8, 8, 16, 12, 8, -1 },
-    // Shotgunguy
-    { 16, 4, 8, 6, 4, 4, 6, 6, 4, -1 },
-    // Chaingunguy
-    { 8, 8, 8, 6, 4, 4, 4, 3, 4, -1 },
-    // Demon
-    { 16, 16, 12, 8, 12, 16, 8, 10, 7, 8, 10, 10, -1 },
-    // Spectre
-    { 1, 1, 1, 1, 1, 1, 1, 1, -1 },
-    // Imp
-    { 16, 8, 8, 8, 8, 8, 16, 16, 16, 12, 12, 8, 8, 8, 10 },
-    // Caco
-    { 16, 16, 16, 12, 12, 10, 16, 16, 16, 12, -1 },
-    // Pain Elemental
-    { 16, 12, 10, 10, 16, 16, 12, 12, -1 },
-    // Lost Soul
-    { 8, 8, 6, 8, 8, 8, 6, -1 },
-    // Revenant
-    { 16, 16, 12, 12, 8, 9, 9, 8, 9, 10, -1 },
-    // HellKnight
-    { 16, 16, 14, 12, 10, 10, 10, 10, 8, 12, 12, -1 },
-    // Baron
-    { 16, 16, 16, 12, 12, 10, 10, 8, 8, 8, 10, -1 },
-    // Fatso
-    { 16, 12, 12, 10, 10, 8, 10, 12, 16, -1 },
-    // ArchVile
-    { 16, 8, 8, 12, 8, 8, 6, 6, 6, -1 },
-    // Arachno
-    { 16, 16, 16, 12, 10, 8, 10, 10, -1 },
-    // Spider Mastermind
-    { 16, 10, 10, 12, 8, 8, 8, 10, -1 },
-    // Cyberdemon
-    { 16, 12, 12, 12, 10, 10, 8, 8, -1 }
-};
-
+// make these actually global sometime
 int Monster_VariationCounts[MAX_MONSTER_CATEGORIES] = { 0 };
 int Monster_CategoryWeightSum[MAX_MONSTER_CATEGORIES] = { 0 };
 
-function str GetIntermissionSong() {
-    return StrParam(s:"INTER", d:random(1, 4));
+int CheckDeadlinessCrit() {
+	return CheckInventory("Perk_Deadliness") * PERK_DEADLINESS_BONUS;
 }
 
-function void CheckDeadlinessCrit() {
-    int roll = random(1, 100);
-    if(CheckInventory("Perk_Deadliness") * PERK_DEADLINESS_BONUS <= roll)
-        GiveInventory("CriticalHit", 1);
+bool CheckCritChance() {
+	int chance = CheckDeadlinessCrit();
+	// add current weapon crit bonuses
+	chance += Player_Weapon_Infos[PlayerNumber()][CheckInventory("DnD_WeaponID")].wep_bonuses[WEP_BONUS_CRIT].amt;
+	// add percent bonus
+	chance = smart_mul(chance, 1.0 + Player_Weapon_Infos[PlayerNumber()][CheckInventory("DnD_WeaponID")].wep_bonuses[WEP_BONUS_CRITPERCENT].amt);
+	
+	int roll = random(0, 1.0);
+	//Log(f:chance, s: " ", f:roll);
+	return chance >= roll;
+}
+
+int GetCritModifier() {
+	int base = DND_BASE_CRITMODIFIER; // 2.0, which is x2 more damage
+	int bonus = DND_SAVAGERY_BONUS * CheckInventory("Perk_Savagery");
+	// weapon bonus
+	bonus += Player_Weapon_Infos[PlayerNumber()][CheckInventory("DnD_WeaponID")].wep_bonuses[WEP_BONUS_CRITDMG].amt;
+	return base + bonus;
+}
+
+void PickQuest() {
+	if(GetCVar("dnd_enable_quests")) {
+		if(GetCVar("dnd_quest_avglevel") <= (total_level / PlayerCount()) && random(1, 100) <= Clamp_Between(GetCVar("dnd_quest_chance"), 1, 100)) {
+			do {
+				active_quest_id = random(0, MAX_QUESTS - 1);
+			} while(!IsValidQuest(active_quest_id));
+		}
+	}
+	else
+		active_quest_id = -1;
+	Quest_Pick_Done = 1;
+}
+
+void ClearQuestCheckers() {
+	SetInventory("DnD_UsingEnergyFailed", 0);
+	for(int i = 0; i < MAX_QUESTS; ++i)
+		SetInventory(Quest_Checkers[i], 0);
+}
+
+int GetDexterity() {
+	int res = CheckInventory("PSTAT_Dexterity");
+	res += CheckInventory("DnD_QuestReward_TalentIncrease") ? DND_QUEST_TALENTBONUS : 0;
+	return res;
+}
+
+int GetIntellect() {
+	int res = CheckInventory("PSTAT_Intellect");
+	//res += CheckInventory("DnD_QuestReward_TalentIncrease") ? DND_QUEST_TALENTBONUS : 0;
+	return res;
+}
+
+int GetStrength() {
+	return CheckInventory("PSTAT_Strength");
+}
+
+int GetTalent(int talent_type) {
+	return CheckInventory(TalentNames[talent_type]);
+}
+
+void CheckMapExitQuest(int pnum, int qid) {
+	int tid = pnum + P_TIDSTART;
+	bool cond = 0;
+	// handle exceptions
+	// immediate conclusion quests are concluded as soon as condition is met
+	if(Quest_List[qid].qflag & QTYPE_IMMEDIATE)
+		return;
+	if(qid == QUEST_NODYING) {
+		cond = !SomeoneDied;
+	}
+	else if(qid == QUEST_ONLYENERGY)
+		cond = !CheckActorInventory(tid, "DnD_UsingEnergyFailed");
+	else if(!QuestExitCheckException(qid))// typical map exit quests
+		cond = !CheckActorInventory(tid, Quest_Checkers[qid]);
+		
+	if(!IsQuestComplete(tid, qid) && cond)
+		CompleteQuest(tid, qid);
+}
+
+// 0 means they are ready
+bool PlayersReadyForHardcore() {
+	bool res = 0;
+	for(int i = 0; i < MAXPLAYERS; ++i)
+		res |= PlayerCanLoad[i];
+	return res;
 }
