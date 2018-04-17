@@ -74,4 +74,13 @@ bool HasNoTempWeapon() {
 	return 0;
 }
 
+void CleanTempAmmo() {
+	for(int i = 0; i < MAXTEMPWEPS; ++i) {
+		if(i != DND_WEAPON_SOULRENDER - TEMPBEGIN)
+			SetInventory(TemporaryAmmos[i], 0);
+		else
+			SetInventory(TemporaryAmmos[i], 100);
+	}
+}
+
 #endif

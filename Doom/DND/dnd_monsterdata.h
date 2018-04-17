@@ -149,6 +149,7 @@ enum {
 	MONSTER_SHADOWBEAST,
 	MONSTER_CHAOSSERPENT,
 	MONSTER_MOONSATYR,
+	DND_ICEGOLEM,
 
 	// Baron
 	MONSTER_LAVADEMON,
@@ -173,6 +174,7 @@ enum {
 	MONSTER_MAFIBUS,
 	MONSTER_ICEFATSO,
 	MONSTER_ABOMINATION,
+	MONSTER_GOLDGOLEM,
 	
 	// Arachnotron
 	MONSTER_FUSIONSPIDER,
@@ -242,6 +244,7 @@ enum {
 	DND_NAZIID
 };
 
+#define DND_BOSS_BEGIN MONSTER_DEMOLISHER
 #define LEGENDARY_START MONSTER_DREAMINGGOD
 #define DND_LASTMONSTER_INDEX MONSTER_GODSLAYER
 #define DND_MAX_LEGENDARY DND_LASTMONSTER_INDEX - LEGENDARY_START + 1
@@ -296,7 +299,7 @@ str MonsterTraits[MAX_MONSTER_TRAITS] = {
 	"Magic Resist"
 };
 
-#define MAX_MONSTER_TRAITS2 9
+#define MAX_MONSTER_TRAITS2 10
 str MonsterTraits2[MAX_MONSTER_TRAITS2] = {
 	"Physical Immune",
 	"Energy Resist",
@@ -306,7 +309,8 @@ str MonsterTraits2[MAX_MONSTER_TRAITS2] = {
 	"Elemental Resist",
 	"Elemental Immune",
 	"Extra Strong",
-	"Vital"
+	"Vital",
+	"Armor Penetration"
 };
 
 // First element on each list is the "Vanilla" monster, rest follow from their variations with Var1 to VarX

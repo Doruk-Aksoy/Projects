@@ -17,10 +17,11 @@ enum {
 	SHI_YELLOWARMOR,
 	SHI_BLUEARMOR,
 	SHI_REDARMOR,
-	SHI_BACKPACK
+	SHI_BACKPACK,
+	SHI_TALENTCAP
 };
 
-#define MAX_SHARED_ITEM_TYPES SHI_BACKPACK + 1
+#define MAX_SHARED_ITEM_TYPES SHI_TALENTCAP + 1
 str SharedItemMessage[MAX_SHARED_ITEM_TYPES] = { 
 	"\ccHealth pickup : \c[Y5]Stimpack x 10\c-",
 	"\ccHealth pickup : \c[Y5]Medikit x 25\c-",
@@ -28,7 +29,19 @@ str SharedItemMessage[MAX_SHARED_ITEM_TYPES] = {
 	"\ccArmor pickup  : \c[Y5]Yellow Armor 42%\c-",
 	"\ccArmor pickup  : \c[Y5]Blue Armor 50%\c-",
 	"\ccArmor Pickup  : \c[Y5]Red Armor 75%\c-",
-	"\ccItem Pickup   : \c[Y5]Backpack\c-"
+	"\ccItem Pickup   : \c[Y5]Backpack\c-",
+	"\ccBonus pickup  : \c[Y5]Talent Capsule\c-"
+};
+
+str SP_SharedItems[MAX_SHARED_ITEM_TYPES] = {
+	"Stimpack_SP",
+	"Medikit_SP",
+	"GreenArmor_SP",
+	"YellowArmor_SP",
+	"BlueArmor_SP",
+	"RedArmor_SP",
+	"Backpack_SP",
+	"TalentCapsule_SP"
 };
 
 struct sif {

@@ -32,10 +32,11 @@ enum {
 	AMMO_EVERICE,
 	AMMO_RUBY,
 	AMMO_THUNDER,
-	AMMO_VIPER
+	AMMO_VIPER,
+	AMMO_DEMONSEAL
 };
 
-#define MAXAMMOTYPES AMMO_VIPER + 1
+#define MAXAMMOTYPES AMMO_DEMONSEAL + 1
 
 str AmmoTypes[MAXAMMOTYPES] = { 
 	"Clip",    
@@ -63,7 +64,8 @@ str AmmoTypes[MAXAMMOTYPES] = {
 	"EverIce",
 	"RubyAmmo",
 	"ThunderAmmo",
-	"ViperAmmo"
+	"ViperAmmo",
+	"DSealAmmo"
 };
 
 int InitialCapacity[MAXAMMOTYPES] = { 
@@ -92,7 +94,8 @@ int InitialCapacity[MAXAMMOTYPES] = {
 	240,
 	175,
 	200,
-	80
+	80,
+	200
 };
 
 enum {
@@ -105,7 +108,7 @@ enum {
 #define MAX_SLOTS DND_AMMOSLOT_CELL + 1
 #define MAX_AMMOTYPES_PER_SLOT 9
 int SlotAmmos[MAX_SLOTS][MAX_AMMOTYPES_PER_SLOT] = {
-	{ AMMO_CLIP, AMMO_EBONY1, AMMO_EBONY2, AMMO_RIOT, AMMO_ACID, AMMO_RUBY, AMMO_VIPER, -1 },
+	{ AMMO_CLIP, AMMO_EBONY1, AMMO_EBONY2, AMMO_RIOT, AMMO_ACID, AMMO_RUBY, AMMO_VIPER, AMMO_DEMONSEAL, -1 },
 	{ AMMO_SHELL, AMMO_EXSHELL, AMMO_SLAYER, AMMO_PCANNON, AMMO_NITROGENCANISTER, -1 },
 	{ AMMO_ROCKET, AMMO_GRENADE, AMMO_HMISSILE, AMMO_METEOR, -1 },
 	{ AMMO_CELL, AMMO_NAIL, AMMO_LAVA, AMMO_GAUSS, AMMO_ION, AMMO_FUEL, AMMO_LIGHTNING, AMMO_EVERICE, AMMO_THUNDER }
@@ -119,14 +122,16 @@ void SetAllAmmoCapacities() {
 // when setting ammo capacity, this must be called at all costs!
 int AmmoCapWithBonuses(int base) {
 	// include any and all bonuses here
-	base = smart_mul(base, 1.0 + Player_Bonuses[PlayerNumber()].holding) >> 16;
+	base *= 1.0 + Player_Bonuses[PlayerNumber()].holding;
+	base >>= 16;
 	return base;
 }
 
 int GetMaximumAmmoCapacity(int t) {
 	int res = InitialCapacity[t] + InitialCapacity[t] * DND_MAX_BACKPACK / DND_BACKPACK_RATIO;
 	// include holding bonuses
-	res = smart_mul(res, 1.0 + Player_Bonuses[PlayerNumber()].holding) >> 16;
+	res *= 1.0 + Player_Bonuses[PlayerNumber()].holding;
+	res >>= 16;
 	return res;
 }
 

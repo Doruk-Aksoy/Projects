@@ -58,6 +58,9 @@ enum {
 	RES_OCCULTARTIFACT,
 };
 
+
+#define DND_RESEARCH_BEGIN RES_RAREARMOR
+#define DND_RESEARCH_END RES_OCCULTARTIFACT
 #define MAX_RESEARCHES RES_OCCULTARTIFACT + 1
 str ResearchPrefix = "\ccResearch Item : \c[Y5]Discovered ";
 str Research_List[MAX_RESEARCHES] = {
@@ -71,8 +74,8 @@ str Research_List[MAX_RESEARCHES] = {
 	"ElectricShell",
     "NitroShell",
 
-	"HEGrenade",
 	"SonicGrenade",
+	"HEGrenade",
 	
 	"DoubleSpecialCap",
 
@@ -175,7 +178,7 @@ str Research_Label[MAX_RESEARCHES] = {
 };
 
 enum {
-	RES_NA,
+	RES_NA = 0,
 	RES_KNOWN,
 	RES_DONE
 };

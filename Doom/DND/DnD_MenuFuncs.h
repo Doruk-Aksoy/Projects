@@ -35,13 +35,13 @@ int GetItemFlags(int itemid) {
 	int type = GetItemType(itemid);
 	switch(type) {
 		case TYPE_WEAPON:
-		return WeaponDrawInfo[itemid].flags;
+		return WeaponDrawInfo[itemid - SHOP_WEAPON_BEGIN].flags;
 		case TYPE_AMMO:
-		return AmmoDrawInfo[itemid].flags;
+		return AmmoDrawInfo[itemid - SHOP_FIRSTAMMO_INDEX].flags;
 		case TYPE_ARTI:
-		return ArtifactDrawInfo[itemid].flags;
+		return ArtifactDrawInfo[itemid - SHOP_FIRSTARTI_INDEX].flags;
 		case TYPE_ABILITY:
-		return AbilityDrawInfo[itemid].flags;
+		return AbilityDrawInfo[itemid - SHOP_ABILITY1_BEGIN].flags;
 	}
 	return 0;
 }
@@ -146,6 +146,13 @@ void DeleteTextRange(int r1, int r2) {
 		HudMessage(s:""; HUDMSG_PLAIN, r1 + i, -1, 160.0, 100.0, 0.0, 0.0);
 }
 
+void ShowNeedResearchPopup() {
+	LocalAmbientSound("RPG/MenuError", 127);
+	GiveInventory("DnD_ShowPopup", 1);
+	GiveInventory("DnD_PopupError", 1);
+	SetInventory("DnD_PopupId", POPUP_NEEDRESEARCH); // popup for research
+}
+
 void DrawCornerText(int opt, int boxid) {
 	str toshow = "";
 	if(CheckInventory("ActiveMainBox") != MAINBOX_NONE)
@@ -154,9 +161,9 @@ void DrawCornerText(int opt, int boxid) {
 		if(boxid == MBOX_1)
 			toshow = "Increase Melee Damage by 9% and Armor Capacity by 3";
 		else if(boxid == MBOX_2)
-			toshow = "Increase Non-Talent Bonus by 0.15%";
+			toshow = "Increase Talent Bonus by 0.1%";
 		else if(boxid == MBOX_3)
-			toshow = "Increase Armor Efficiency by 0.75%";
+			toshow = "Increase Armor Efficiency by 0.6%";
 		else if(boxid == MBOX_4)
 			toshow = "Reduce shop prices by 0.5%";
 		else if(boxid == MBOX_5)
@@ -179,7 +186,7 @@ void DrawCornerText(int opt, int boxid) {
 				toshow = "Increase credit gain by 10%";
 			break;
 			case MBOX_5:
-				toshow = "Increase Healing by 5";
+				toshow = "Increase Healing by 10%";
 			break;
 			case MBOX_6:
 				toshow = "Increase Ammo Gain by 10%";
@@ -191,7 +198,7 @@ void DrawCornerText(int opt, int boxid) {
                 toshow = "Gives 10% extra damage to your crits";
             break;
 			case MBOX_9:
-				toshow = "Gives 1.5% extra drop chance";
+				toshow = "15% increased drop chance";
 			break;
 			default:
 				toshow = "";
@@ -396,26 +403,27 @@ int ShopScale(int amount, int id) {
 }
 
 int GetShopPrice (int id, int priceflag) {
-	int res = 0;
+	int res = 0, chr = 0, shop_scale = Clamp_Between(GetCVar("dnd_shop_scale"), 1, SHOP_SCALE_MAX);
 	if(id < MAXSHOPITEMS)
-		res = ShopInfo[id][SHOPINFO_PRICE] * Clamp_Between(GetCVar("dnd_shop_scale"), 1, SHOP_SCALE_MAX);
+		res = ShopInfo[id][SHOPINFO_PRICE] * shop_scale;
 	res = ShopScale(res, id);
 	if(GetItemType(id) == TYPE_TALENT) {
-		res += TALENT_COST_INCREASE * CheckInventory(TalentNames[id - SHOP_TALENT_BEGIN]);
-		if(CheckInventory(TalentNames[id - SHOP_TALENT_BEGIN]) > 50) // double if above 50
-			res *= 2;
-		if(CheckInventory(TalentNames[id - SHOP_TALENT_BEGIN]) > 75) // quad if above 75
-			res *= 2;
+		res += TALENT_COST_INCREASE * CheckInventory(TalentNames[id - SHOP_TALENT_BEGIN]) * shop_scale;
+		if(CheckInventory(TalentNames[id - SHOP_TALENT_BEGIN]) >= TALENT_SCALE_DOUBLER_MARK)
+			res *= 2 * CheckInventory(TalentNames[id - SHOP_TALENT_BEGIN]) / TALENT_SCALE_DOUBLER_MARK;
 	}
 	if(priceflag & PRICE_CHARISMAREDUCE) {
-		res -= (res * CheckInventory("PSTAT_Charisma")) / (100 * CHARISMA_REDUCE);
+		chr = CheckInventory("PSTAT_Charisma");
+		if(chr > 100)
+			res -= res / 2 + (res * (chr - 100)) / (100 * CHARISMA_REDUCE_AFTER100);
+		else
+			res -= (res * chr) / (100 * CHARISMA_REDUCE);
 	}
 	return res;
 }
 
 int GetMenuTalentBonus(int posy) {
-	// ugly hacks hope this never changes...
-	if(posy != 3)
+	if(posy != TALENT_OCCULT)
 		return DND_TALENT_INCREASE + DND_DEX_GAIN * CheckInventory("PSTAT_Dexterity");
 	return DND_TALENT_INCREASE + DND_INT_GAIN * CheckInventory("PSTAT_Intellect");
 }
@@ -452,7 +460,7 @@ int CanTrade (int id, int tradeflag, int price) {
 	type = GetItemType(id);
 	
 	if(type == TYPE_ARTI)
-		item = ArtifactInfo[id + MAXARTIFACTS - MAXSHOPITEMS][ARTI_NAME]; // put it in the artifact info range
+		item = ArtifactInfo[id - SHOP_FIRSTARTI_INDEX][ARTI_NAME]; // put it in the artifact info range
 	else if(type == TYPE_TALENT)
 		item = ShopItemNames[id][SHOPNAME_ITEM];
 	else if(type == TYPE_ARMOR)
@@ -469,11 +477,11 @@ int CanTrade (int id, int tradeflag, int price) {
 			cond2 = CheckInventory(item) < TALENT_CAP && CheckInventory("TalentPoint");
 		else if(type == TYPE_ARMOR) // armor
 			cond2 = CheckInventory(item) < GetArmorSpecificCap(ArmorBaseAmounts[id - SHOP_FIRSTARMOR_INDEX + 1]);
-		else if(type != TYPE_WEAPON) { // item
+		else if(type != TYPE_WEAPON && type != TYPE_ABILITY) { // item
 			if(id != SHOP_ARTI_BACKPACK)
 				cond2 = (CheckInventory(item) < ShopInfo[id][SHOPINFO_MAX]) && !IsSet(CheckInventory("DnD_Artifact_MapBits"), id - SHOP_FIRSTARTI_INDEX);
 			else
-				cond2 = ACS_ExecuteWithResult(994, 0);
+				cond2 = ACS_ExecuteWithResult(994, 0) && !IsSet(CheckInventory("DnD_Artifact_MapBits"), id - SHOP_FIRSTARTI_INDEX);
 		}
 		else { // weapon
 			cond3 = !CheckInventory(item);
@@ -661,11 +669,7 @@ void ProcessTrade (int posy, int low, int high, int tradeflag) {
 		if(itemid <= high && CheckInventory("MadeChoice") == 1) {
 			// consider the research if this item has any
 			if(!CheckItemRequirements(itemid, RES_DONE, GetItemFlags(itemid))) {
-				// not done, so we can't give this
-				LocalAmbientSound("RPG/MenuError", 127);
-				GiveInventory("DnD_ShowPopup", 1);
-				GiveInventory("DnD_PopupError", 1);
-				SetInventory("DnD_PopupId", POPUP_NEEDRESEARCH); // popup for research
+				ShowNeedResearchPopup();
 			}
 			else {
 				// now consider money and other things as factors
@@ -676,8 +680,9 @@ void ProcessTrade (int posy, int low, int high, int tradeflag) {
 					TakeInventory("Credit", price);
 					// for money quest
 					GiveInventory("DnD_MoneySpentQuest", price);
-					if(tradeflag & TRADE_ARMOR) // armors are handled differently (+1 below is because armor_type considers armor bonus)
-						HandleArmorPickup(itemid - SHOP_FIRSTARMOR_INDEX + 1, ArmorBaseAmounts[itemid - SHOP_FIRSTARMOR_INDEX + 1]);
+					if(tradeflag & TRADE_ARMOR) { // armors are handled differently (+1 below is because armor_type considers armor bonus)
+						HandleArmorPickup(itemid - SHOP_FIRSTARMOR_INDEX + 1, ArmorBaseAmounts[itemid - SHOP_FIRSTARMOR_INDEX + 1], tradeflag & TRADE_ARMOR_REPLACE);
+					}
 					else
 						GiveInventory(ShopItemNames[itemid][SHOPNAME_ITEM], 1);
 					if(tradeflag & TRADE_WEAPON) {
@@ -887,32 +892,40 @@ void ListenScroll(int condx_min, int condx_max) {
 
 void HandleAmmoPurchase(int boxid, int index_beg, int arr_index, bool givefull) {
 	int itemid = index_beg + boxid - 1;
-	int price = GetShopPrice(itemid, PRICE_CHARISMAREDUCE);
-	int buystatus = CanTrade(itemid, TRADE_BUY, price);
-	if(!buystatus) {
-		int amt = AmmoCounts[arr_index], count = 1;
-		amt += ACS_ExecuteWithResult(918, 0, 1, amt);
-		
-		// if we are maxing the ammo
-		if(givefull) {
-			count += (GetAmmoCapacity(AmmoInfo[arr_index][AMMO_NAME]) - CheckInventory(AmmoInfo[arr_index][AMMO_NAME])) / amt;
-			price = price * count;
-			if(price > CheckInventory("Credit")) {
-				count = CheckInventory("Credit") / GetShopPrice(itemid, PRICE_CHARISMAREDUCE);
-				price = count * GetShopPrice(itemid, PRICE_CHARISMAREDUCE);
-			}
-		}
-		// check how much of this we can really afford
-		
-		TakeInventory("Credit", price);
-		LocalAmbientSound("items/ammo", 127);
-		GiveInventory(AmmoInfo[arr_index][AMMO_NAME], amt * count);
-		
-		GiveInventory("DnD_MoneySpentQuest", price);
+	
+	if(!CheckItemRequirements(itemid, RES_DONE, GetItemFlags(itemid))) {
+		// not done, so we can't give this
+		ShowNeedResearchPopup();
 	}
 	else {
-		LocalAmbientSound("RPG/MenuError", 127);
-		GiveInventory("DnD_ShowPopup", 1);
+		int price = GetShopPrice(itemid, PRICE_CHARISMAREDUCE);
+		int buystatus = CanTrade(itemid, TRADE_BUY, price);
+		
+		if(!buystatus) {
+			int amt = AmmoCounts[arr_index], count = 1;
+			amt += ACS_ExecuteWithResult(918, 0, 1, amt);
+			
+			// if we are maxing the ammo
+			if(givefull) {
+				count += (GetAmmoCapacity(AmmoInfo[arr_index][AMMO_NAME]) - CheckInventory(AmmoInfo[arr_index][AMMO_NAME])) / amt;
+				price = price * count;
+				if(price > CheckInventory("Credit")) {
+					count = CheckInventory("Credit") / GetShopPrice(itemid, PRICE_CHARISMAREDUCE);
+					price = count * GetShopPrice(itemid, PRICE_CHARISMAREDUCE);
+				}
+			}
+			// check how much of this we can really afford
+			
+			TakeInventory("Credit", price);
+			LocalAmbientSound("items/ammo", 127);
+			GiveInventory(AmmoInfo[arr_index][AMMO_NAME], amt * count);
+			
+			GiveInventory("DnD_MoneySpentQuest", price);
+		}
+		else {
+			LocalAmbientSound("RPG/MenuError", 127);
+			GiveInventory("DnD_ShowPopup", 1);
+		}
 	}
 }
 
@@ -929,7 +942,7 @@ int GetCursorPos(int input, int mt) {
 			speed = FixedMul(speed * 2, HUDMAX_XF) / (HUDMAX_X * 100);
 			ds = input * speed;
 			res = Clamp_Between(res + ds, 0, HUDMAX_XF);
-			break;
+		break;
 		case MOUSE_INPUT_Y:
 			res = CheckInventory("Mouse_Y");
 			speed = FixedDiv(1.0, FixedMul(GetCVar("m_pitch"), GetCVar("mouse_sensitivity")));
@@ -938,7 +951,7 @@ int GetCursorPos(int input, int mt) {
 				speed *= -1;
 			ds = input * speed;
 			res = Clamp_Between(res + ds, 0, HUDMAX_YF);
-			break;
+		break;
 	}
 	return res;
 }
@@ -978,7 +991,6 @@ void AddBoxToPane(menu_pane_T& p, rect_T& box) {
 }
 
 void AddBoxToPane_Points(menu_pane_T& p, int tx, int ty, int bx, int by) {
-	
 	if(p.cursize < MAX_MENU_BOXES) {
 		p.MenuRectangles[p.cursize].topleft_x = tx;
 		p.MenuRectangles[p.cursize].topleft_y = ty;
@@ -1068,7 +1080,7 @@ rect_T& LoadRect(int menu_page, int id) {
 		},
 		// loadout 4 -- all the clickables in the respective order (95 diff on y, scrollpos adds (1 per movement) x 4 in loadout speed)
 		// we really only generate the y positions for the boxes, and what the boxes are is arbitrary
-		// we save x pairs somewhere and load from there
+		// we save x pairs here and load
 		{
 			{ 226.0, 268.0, 102.0, 260.0 },
 			{ 224.0, 268.0, 107.0, 260.0 },
@@ -1084,6 +1096,9 @@ rect_T& LoadRect(int menu_page, int id) {
 			{ 220.0, 268.0, 108.0, 260.0 },
 			{ 197.0, 268.0, 131.0, 260.0 },
 			{ 232.0, 268.0, 97.0, 260.0 },
+			{ 226.0, 268.0, 106.0, 260.0 },
+			{ 244.0, 268.0, 86.0, 260.0 },
+			{ 236.0, 268.0, 96.0, 260.0 },
 			{ -1, -1, -1, -1 }
 		},
 		// shop
@@ -1115,6 +1130,7 @@ rect_T& LoadRect(int menu_page, int id) {
 			{ 289.0, 213.0, 120.0, 207.0 }, // w3
 			{ 289.0, 197.0, 120.0, 191.0 }, // w4
 			{ 289.0, 181.0, 120.0, 175.0 }, // w5
+			{ 289.0, 165.0, 120.0, 159.0 }, // w6
 			{ -1, -1, -1, -1 }
 		},
 		// wep 2
@@ -1155,6 +1171,7 @@ rect_T& LoadRect(int menu_page, int id) {
 			{ 289.0, 181.0, 120.0, 175.0 }, // w5
 			{ 289.0, 165.0, 120.0, 159.0 }, // w6
 			{ 289.0, 149.0, 120.0, 143.0 }, // w7
+			{ 289.0, 133.0, 120.0, 127.0 }, // w8
 			{ -1, -1, -1, -1 }
 		},
 		// wep 5
@@ -1234,6 +1251,7 @@ rect_T& LoadRect(int menu_page, int id) {
 			{ 289.0, 213.0, 120.0, 207.0 }, // w3
 			{ 289.0, 197.0, 120.0, 191.0 }, // w4
 			{ 289.0, 181.0, 120.0, 175.0 }, // w5
+			{ 289.0, 165.0, 120.0, 159.0 }, // w6
 			{ -1, -1, -1, -1 }
 		},
 		// ammo special
@@ -1287,7 +1305,6 @@ rect_T& LoadRect(int menu_page, int id) {
 			{ 289.0, 197.0, 120.0, 191.0 }, // w4
 			{ 289.0, 181.0, 120.0, 175.0 }, // w5
 			{ 289.0, 165.0, 120.0, 159.0 }, // w6
-			{ 289.0, 149.0, 120.0, 143.0 }, // w7
 			{ -1, -1, -1, -1 }
 		},
 		// armor 1
@@ -1323,16 +1340,38 @@ rect_T& LoadRect(int menu_page, int id) {
 		},
 		// help
 		{
-			{ 289.0, 229.0, 179.0, 222.0 }, // res
-			{ 289.0, 213.0, 162.0, 206.0 }, // dmg
-			{ 289.0, 197.0, 178.0, 190.0 }, // orb
-			{ 289.0, 181.0, 178.0, 174.0 }, // leg
+			{ 289.0, 229.0, 179.0, 222.0 }, // char
+			{ 289.0, 213.0, 162.0, 206.0 }, // res
+			{ 289.0, 197.0, 178.0, 190.0 }, // dmg
+			{ 289.0, 181.0, 178.0, 174.0 }, // orb
+			{ 289.0, 165.0, 178.0, 158.0 }, // leg
+			{ 289.0, 149.0, 179.0, 142.0 }, // mods
 			{ 296.0, 81.0, 182.0, 73.0 }, // show info
+			{ -1, -1, -1, -1 }
+		},
+		// help res
+		{
+			{ -1, -1, -1, -1 }
+		},
+		// help damage
+		{
+			{ -1, -1, -1, -1 }
+		},
+		// help orbs
+		{
+			{ -1, -1, -1, -1 }
+		},
+		// help leg
+		{
+			{ -1, -1, -1, -1 }
+		},
+		// help monster mods
+		{
 			{ -1, -1, -1, -1 }
 		},
 		// ability
 		{
-			{ 289.0, 69.0, 104.0, 63.0 }, // dash
+			{ 289.0, 69.0, 104.0, 61.0 }, // dash
 			{ -1, -1, -1, -1 }
 		}
 	};

@@ -5,49 +5,43 @@
 
 Script "DND Shared Item Check" (void) {
 	int res = 1;
-	if(GameType() != GAME_SINGLE_PLAYER) {
-		int pid = ActivatorTID();
-		// find which item this guy is really closest to
-		int closest = GetClosestSharedItem(pid);
-		if(closest != -1) {
-			// check if this item was picked up
-			// prevent multiple pickup calls from being handled for the same player while this is being processed
-			if(!Shared_Item_Info[closest].semaphore[pid - P_TIDSTART]) {
-				if(!Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART]) {
-					Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 1;
-					SetActorInventory(pid, "DnD_SharedItemTID", closest + 1);
-				}
-				res = Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART];
+	int pid = ActivatorTID();
+	// find which item this guy is really closest to
+	int closest = GetClosestSharedItem(pid);
+	if(closest != -1) {
+		// check if this item was picked up
+		// prevent multiple pickup calls from being handled for the same player while this is being processed
+		if(!Shared_Item_Info[closest].semaphore[pid - P_TIDSTART]) {
+			if(!Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART]) {
+				Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 1;
+				SetActorInventory(pid, "DnD_SharedItemTID", closest + 1);
 			}
+			res = Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART];
 		}
 	}
-	else
-		res = 0;
 	SetResultValue(res);
 }
 
 Script "DND Shared Item Pickup" (void) {
 	int pid = ActivatorTID();
-	int closest = CheckActorInventory(pid, "DnD_SharedItemTID") - 1;
-	if(GameType() != GAME_SINGLE_PLAYER) {
-		// find which item this guy is really closest to
-		if(closest != -1) {
-			ACS_ExecuteAlways(801, 0, closest + SHARED_ITEM_TID_BEGIN);
-			Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART] = 1;
-			Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 1;
-			SetActorInventory(pid, "DnD_SharedItemTID", 0);
-		}
-	}
-	else {
-		if(closest != -1) {
-			Thing_Remove(closest + SHARED_ITEM_TID_BEGIN);
-			SetActorInventory(pid, "DnD_SharedItemTID", 0);
-		}
+	int closest = 0;
+	// find which item this guy is really closest to
+	closest = CheckActorInventory(pid, "DnD_SharedItemTID") - 1;
+	if(closest != -1) {
+		ACS_ExecuteAlways(801, 0, closest + SHARED_ITEM_TID_BEGIN);
+		Shared_Item_Info[closest].pickup_state[pid - P_TIDSTART] = 1;
+		Shared_Item_Info[closest].semaphore[pid - P_TIDSTART] = 1;
+		SetActorInventory(pid, "DnD_SharedItemTID", 0);
 	}
 }
 
-Script "DND Shared Item Init" (void) {
-	Thing_ChangeTID(0, SHARED_ITEM_TID_BEGIN + shared_item_counter++);
+Script "DND Shared Item Init" (int type) {
+	if(GameType() != GAME_SINGLE_PLAYER)
+		Thing_ChangeTID(0, SHARED_ITEM_TID_BEGIN + shared_item_counter++);
+	else {
+		Spawn(SP_SharedItems[type], GetActorX(0), GetActorY(0), GetActorZ(0), 0);
+		Thing_Remove(0);
+	}
 }
 
 Script "DND Shared Item Clear Semaphore" (void) {

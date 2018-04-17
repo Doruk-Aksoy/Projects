@@ -28,8 +28,10 @@ Script 959 (int type) CLIENTSIDE {
 	}
 	else if(type == 1)
 		GiveInventory("ArbiterFade", 1);
-	else if(type == 2)
+	else if(type == 2) {
+		TakeInventory("ArbiterFade", 1);
 		GiveInventory("ArbiterDead", 1);
+	}
 	else if(type == 3)
 		TakeInventory("ArbiterFade", 1);
 	else if(type == 4)
@@ -92,19 +94,23 @@ Script 961 (int type, int amt, int item) {
 		// don't judge me, this shit just doesn't work in decorate of zan 3.0...
 		Spawn("DarkHealEffectSpawner", GetActorX(0), GetActorY(0), GetActorZ(0));
 	}
-	else if(type == 7)
-		SetResultValue(CheckInventory("MonsterMaxHealth"));
+	else if(type == 7) {
+		amt = CheckInventory("MonsterMaxHealth");
+		if(!amt)
+			amt = GetActorProperty(0, APROP_SpawnHealth);;
+		SetResultValue(amt);
+	}
 }
 
 Script "DND Special Player Hurt" (int type, int percent) {
-	int vit, thisactor;
+	int vit, thisactor, hp;
 	if(!type) {
 		vit = CheckInventory("PSTAT_Vitality");
 		thisactor = ActivatorTID();
 		SetActivator(0, AAPTR_TARGET);
-		Thing_Damage2(thisactor, vit / 2, "VileGhostDrain");
-		vit = Clamp_Between(vit / 2, 1, vit);
-		int hp = Clamp_Between(GetActorProperty(0, APROP_HEALTH) + vit, 1, CheckInventory("MonsterMaxHealth"));
+		Thing_Damage2(thisactor, vit / 4, "VileGhostDrain");
+		vit = Clamp_Between(vit / 4, 1, vit);
+		hp = Clamp_Between(GetActorProperty(0, APROP_HEALTH) + vit, 1, CheckInventory("MonsterMaxHealth"));
 		SetActorProperty(0, APROP_HEALTH, hp);
 		Spawn("RegenEffectSpawner", GetActorX(0), GetActorY(0), GetActorZ(0), 0);
 	}
@@ -124,21 +130,6 @@ Script "DND Special Player Hurt" (int type, int percent) {
 		vit /= 100;
 		SetActivator(0, AAPTR_TARGET);
 		Thing_Damage2(thisactor, vit / 2, "Magical");
-	}
-}
-
-// general TID assigner
-Script 964 (int which) {
-	switch (which) {
-		case 0:
-			Thing_ChangeTID(0, AVATAR_BASE_TID + (AvatarTID++));
-		break;
-		case 1:
-			Thing_ChangeTID(0, PURP_DEM_TID + (PurpDemTID++));
-		break;
-		case 2:
-			Thing_ChangeTID(0, ZEALOT_BASE_TID + (ZealotTID++));
-		break;
 	}
 }
 
@@ -277,32 +268,36 @@ Script "DND Poison Damage Register" (int damage, int duration) {
 }
 
 Script "DND Poison Damage Checker" ENTER {
-	int tic = 0;
+	int tic = 0, pnum = PlayerNumber();
 	while(!CheckInventory("Ability_AntiPoison")) {
 		if(isAlive()) {
 			// check each poison element
 			for(int i = 0; i < MAX_POISON_DAMAGES; ++i) {
 				// setup the start time
-				if(player_poison_damages[PlayerNumber()].poison_list[i].duration) {
-					if(!player_poison_damages[PlayerNumber()].poison_list[i].stime)
-						player_poison_damages[PlayerNumber()].poison_list[i].stime = tic;
+				if(player_poison_damages[pnum].poison_list[i].duration) {
+					if(!player_poison_damages[pnum].poison_list[i].stime)
+						player_poison_damages[pnum].poison_list[i].stime = tic;
 					
 					// if tics is stime, do damage and drop duration
-					if(tic == player_poison_damages[PlayerNumber()].poison_list[i].stime) {
-						DealPoisonDamage(player_poison_damages[PlayerNumber()].poison_list[i].owner, player_poison_damages[PlayerNumber()].poison_list[i].dmg);
-						--player_poison_damages[PlayerNumber()].poison_list[i].duration;
+					if(tic == player_poison_damages[pnum].poison_list[i].stime) {
+						DealPoisonDamage(player_poison_damages[pnum].poison_list[i].owner, player_poison_damages[pnum].poison_list[i].dmg);
+						--player_poison_damages[pnum].poison_list[i].duration;
 					}
 				}
 				
 				// if duration is 0, remove (set start time to 0) -- duration = 0 means it's marked as removed
-				if(!player_poison_damages[PlayerNumber()].poison_list[i].duration) {
-					player_poison_damages[PlayerNumber()].poison_list[i].stime = 0;
-					--player_poison_damages[PlayerNumber()].cursize;
+				// do this only if there actually are poison effects
+				if(!player_poison_damages[pnum].poison_list[i].duration && player_poison_damages[pnum].poison_list[i].state) {
+					player_poison_damages[pnum].poison_list[i].stime = 0;
+					player_poison_damages[pnum].poison_list[i].state = 0;
+					--player_poison_damages[pnum].cursize;
 				}
 			}
 		}
-		else
+		else {
 			ClearPoisonDamages();
+			break;
+		}
 		
 		tic = (tic + 1) % TICRATE;
 		Delay(1);

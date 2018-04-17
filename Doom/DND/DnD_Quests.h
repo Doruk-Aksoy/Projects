@@ -90,7 +90,7 @@ quest_T Quest_List[MAX_QUESTS] = {
 #define DND_GUNSLINGER_GAIN 0.5
 #define DND_BOOMSTICK_GAIN 0.5
 #define DND_SUPERWEAPON_GAIN 0.25
-#define DND_ELITEDROP_GAIN 0.05
+#define DND_ELITEDROP_GAIN 0.25
 
 #define QUEST_NAME 0
 #define QUEST_REQ 1
@@ -129,7 +129,7 @@ str Quest_Description[MAX_QUESTS][3] = {
 		{
 			"Elite Slayer",
 			"Kill 50 elite monsters.",
-			"Elites have 5% more chance of rare drops."
+			"Elites have extra 25% chance of rare drops."
 		},
 		{
 			"Power Overwhelming",
@@ -174,7 +174,7 @@ str Quest_Description[MAX_QUESTS][3] = {
 		{
 			"Natural Talent",
 			"Only use weapon types that have no talents applied.",
-			"Talents get 25% dexterity bonus applied."
+			"Talents get 25% dexterity or intellect bonus applied."
 		},
 		{
 			"Specialist",
@@ -189,22 +189,22 @@ str Quest_Description[MAX_QUESTS][3] = {
 		{
 			"The Dreaming God",
 			"Find and kill the Dreaming God.",
-			"Seal of the Dreaming God."
+			"Seal of the Dreaming God. (All occult weapons do full damage and hit ghosts regardless of enemy mods)"
 		},
 		{
 			"Torrasque",
 			"Find and kill Torrasque.",
-			"Seal of Torrasque."
+			"Seal of Torrasque. (15% increased health and armor capacity)"
 		},
 		{
 			"Mordecqai",
 			"Find and kill Mordecqai.",
-			"Seal of Mordecqai."
+			"Seal of Mordecqai. (Elemental attacks do x2 more damage)"
 		},
 		{
 			"GodSlayer",
 			"Find and kill GodSlayer.",
-			"Seal of GodSlayer."
+			"Seal of GodSlayer. (Weapons never overheat)"
 		}
 };
 
@@ -217,7 +217,7 @@ str Quest_Checkers[MAX_QUESTS] = {
 	"DnD_BossKillQuest_Counter",
 	"DnD_EliteKillQuest_Counter",
 	"DnD_UseNoArtifact",
-	"DnD_UsingEnergy",
+	"DnD_UsingEnergyFailed",
 	"DnD_UseNoHealth",
 	"DnD_UseOnlyPistol",
 	"DnD_UseNoShotgun",
@@ -227,6 +227,8 @@ str Quest_Checkers[MAX_QUESTS] = {
 	"DnD_UsedNonTalent",
 	"DnD_UsedNonSpecial",
 	"DnD_MoneySpentQuest",
+	"DnD_Boolean",
+	"DnD_Boolean",
 	"DnD_Boolean",
 	"DnD_Boolean"
 };
@@ -239,7 +241,9 @@ void CompleteQuest(int tid, int qid) {
 	SetActorInventory(tid, tocheck, CheckActorInventory(tid, tocheck) | (1 << qid));
 	GiveActorInventory(tid, Quest_List[qid].qreward, 1);
 	SetActorInventory(tid, "QuestCompletionToken", active_quest_id + 1);
-	FailQuest(qid);
+	ACS_NamedExecuteAlways("DND Quest Complete", 0);
+	SetActorInventory(tid, "ActiveQuestID", 0);
+	FinishQuest(tid, qid);
 }
 
 bool IsQuestComplete(int tid, int qid) {
@@ -252,9 +256,18 @@ bool IsQuestComplete(int tid, int qid) {
 	return IsSet(CheckActorInventory(tid, tocheck), qid);
 }
 
-void FailQuest(int qid) {
+void FailQuest(int tid, int qid) {
+	// fail marker
+	if(CheckActorInventory(tid, "ActiveQuestID")) {
+		ACS_NamedExecuteAlways("DND Quest Complete", 0, 1);
+		SetActorInventory(tid, "ActiveQuestID", 0);
+	}
+}
+
+void FinishQuest(int tid, int qid) {
+	SetActorInventory(tid, Quest_Checkers[qid], 0);
 	// individual quests are who gets it done first, so if someone gets it remove this quest
-	if(Quest_List[qid].qflag != QTYPE_ATLEASTONE) {
+	if(!(Quest_List[qid].qflag & QTYPE_ATLEASTONE)) {
 		active_quest_id = -1;
 		// clear from all players
 		for(int i = 0; i < MAXPLAYERS; ++i)

@@ -8,6 +8,7 @@ typedef struct poison_dmg {
 	int duration;
 	int owner;
 	int stime;
+	bool state; // 0 inactive, 1 active
 } poison_T;
 
 #define MAX_POISON_DAMAGES 5
@@ -28,22 +29,25 @@ void DealPoisonDamage(int target, int dmg) {
 	if(CheckInventory("MonsterIsElite"))
 		res = FixedMul(res, 1.0 + GetEliteBonusDamage());
 	if(IsExtraStrong())
-		res = smart_mul(res, 1.0 + DND_ELITE_EXTRASTRONG_BONUS);
+		res = FixedMul(res, 1.0 + DND_ELITE_EXTRASTRONG_BONUS);
 	if(CheckInventory("MonsterLevel") > 50)
-		res = smart_mul(res, 1.0 + DND_AFTER50_INCREMENT_F);
-	dmg = ((dmg & 0xFF) * (res + 1.0)) >> 16;
+		res = FixedMul(res, 1.0 + DND_AFTER50_INCREMENT_DAMAGE);
+	//printbold(f:res);
+	dmg = ((dmg & 0xFF) * ((res / 2) + 1.0)) >> 16;
 	Thing_Damage2(this, dmg, "Poison");
 	SetActivator(this);
 }
 
 void RegisterPoisonDamage(int pnum, int dmg, int duration, int owner) {
 	int pos = -1, i;
+	bool sameSource = false;
 	// check if we have space first
 	if(player_poison_damages[pnum].cursize < MAX_POISON_DAMAGES) {
 		// if this was put by the same source, just find the one that's running out and replace that one instead
 		for(i = 0; i < MAX_POISON_DAMAGES; ++i) {
 			if(player_poison_damages[pnum].poison_list[i].owner == owner) {
 				pos = i;
+				sameSource = true;
 				break;
 			}
 		}
@@ -51,16 +55,18 @@ void RegisterPoisonDamage(int pnum, int dmg, int duration, int owner) {
 		if(pos == -1) {
 			// start and check from beginning, see which spot is free
 			for(i = 0; i < MAX_POISON_DAMAGES; ++i) {
-				if(!player_poison_damages[pnum].poison_list[i].duration) {
+				if(!player_poison_damages[pnum].poison_list[i].state) {
 					pos = i;
 					break;
 				}
 			}
 		}
-		++player_poison_damages[pnum].cursize;
+		if(!sameSource)
+			++player_poison_damages[pnum].cursize;
 		player_poison_damages[pnum].poison_list[pos].dmg = dmg;
 		player_poison_damages[pnum].poison_list[pos].duration = duration;
 		player_poison_damages[pnum].poison_list[pos].owner = owner;
+		player_poison_damages[pnum].poison_list[pos].state = 1;
 	}
 	else {
 		// find one with lowest duration left
@@ -76,12 +82,13 @@ void RegisterPoisonDamage(int pnum, int dmg, int duration, int owner) {
 		player_poison_damages[pnum].poison_list[pos].dmg = dmg;
 		player_poison_damages[pnum].poison_list[pos].duration = duration;
 		player_poison_damages[pnum].poison_list[pos].owner = owner;
+		player_poison_damages[pnum].poison_list[pos].state = 1;
 	}
 }
 
 void ClearPoisonDamages() {
 	for(int i = 0; i < MAX_POISON_DAMAGES; ++i)
-		player_poison_damages[PlayerNumber()].poison_list[i].duration = 0;
+		player_poison_damages[PlayerNumber()].poison_list[i].state = 0;
 }
 
 #endif

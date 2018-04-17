@@ -3,24 +3,30 @@
 
 enum {
 	DND_SYNC_WEAPONENHANCE,
+	
 	DND_SYNC_SPEED,
+	
 	DND_SYNC_DROPCHANCE,
+	
 	DND_SYNC_PROSPERITY_BONUS,
 	DND_SYNC_FORTITUDE_BONUS,
 	DND_SYNC_HPFLAT_BONUS,
 	DND_SYNC_ARMORFLAT_BONUS,
 	DND_SYNC_HPPERCENT_BONUS,
 	DND_SYNC_ARMORPERCENT_BONUS,
+	
 	DND_SYNC_GREEDPERCENT_BONUS,
 	DND_SYNC_WISDOMPERCENT_BONUS,
+	
 	DND_SYNC_HOLDING,
+	
 	DND_SYNC_DAMAGEBULLET,
-	DND_SYNC_DAMAGESHELL,
-	DND_SYNC_DAMAGEENERGY,
-	DND_SYNC_DAMAGEEXPLOSIVE,
 	DND_SYNC_DAMAGEMELEE,
-	DND_SYNC_DAMAGEELEMENTAL,
 	DND_SYNC_DAMAGEOCCULT,
+	DND_SYNC_DAMAGEEXPLOSIVE,
+	DND_SYNC_DAMAGEENERGY,
+	DND_SYNC_DAMAGEELEMENTAL,
+	
 	DND_SYNC_WEPBONUS_CRIT,
 	DND_SYNC_WEPBONUS_CRITDMG,
 	DND_SYNC_WEPBONUS_CRITPERCENT,
@@ -57,8 +63,6 @@ int GetPlayerSyncValue(int pos, int extra) {
 		return Player_Bonuses[pnum].holding;
 		case DND_SYNC_DAMAGEBULLET:
 		return Player_Bonuses[pnum].damage_type_bonus[TALENT_BULLET];
-		case DND_SYNC_DAMAGESHELL:
-		return Player_Bonuses[pnum].damage_type_bonus[TALENT_SHELL];
 		case DND_SYNC_DAMAGEENERGY:
 		return Player_Bonuses[pnum].damage_type_bonus[TALENT_ENERGY];
 		case DND_SYNC_DAMAGEEXPLOSIVE:
@@ -123,9 +127,6 @@ void SetSyncValue(int pos, int val, int extra) {
 		case DND_SYNC_DAMAGEBULLET:
 			Player_Bonuses[pnum].damage_type_bonus[TALENT_BULLET] = val;
 		break;
-		case DND_SYNC_DAMAGESHELL:
-			Player_Bonuses[pnum].damage_type_bonus[TALENT_SHELL] = val;
-		break;
 		case DND_SYNC_DAMAGEENERGY:
 			Player_Bonuses[pnum].damage_type_bonus[TALENT_ENERGY] = val;
 		break;
@@ -156,7 +157,14 @@ void SetSyncValue(int pos, int val, int extra) {
 	}
 }
 
-void SyncClientsideVariables() {
+void SyncClientsideVariable(int var, int extra) {
+	if(var == DND_SYNC_WEAPONENHANCE || var >= DND_SYNC_WEPBONUS_CRIT)
+		ACS_NamedExecuteAlways("DND Clientside Syncer", 0, var, GetPlayerSyncValue(var, extra), extra);
+	else
+		ACS_NamedExecuteAlways("DND Clientside Syncer", 0, var, GetPlayerSyncValue(var, 0), 0);
+}
+
+void SyncAllClientsideVariables() {
 	for(int i = 0; i < MAX_SYNC_VARS; ++i) {
 		if(i == DND_SYNC_WEAPONENHANCE || i >= DND_SYNC_WEPBONUS_CRIT) {
 			for(int j = 0; j < MAXWEPS; ++j)

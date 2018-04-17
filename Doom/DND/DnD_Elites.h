@@ -4,8 +4,8 @@
 #define DND_MIN_ELITEMODS 2
 #define DND_MAX_ELITEMODS 4
 #define DND_ELITE_HPSCALE 15
-#define DND_ELITE_DMGSCALE 0.035
-#define DND_ELITE_EXTRASTRONG_BONUS 0.5
+#define DND_ELITE_DMGSCALE 0.02
+#define DND_ELITE_EXTRASTRONG_BONUS 0.35
 #define DND_ELITE_VITAL_SCALE 100
 #define DND_ELITE_CREDITCHANCE_BONUS 0.1
 #define DND_ELITE_EXP_BONUS 25
@@ -18,7 +18,7 @@
 #define DND_ELITE_MIN_INCREMENT 25 // per level add 0.25
 #define DND_ELITE_RESOLUTION_SCALE 100
 
-#define DND_ELITE_BASEDROP 0.05
+#define DND_ELITE_BASEDROP 0.035
 
 #define MAX_ELITE_TRIES 50
 #define DND_MAX_ELITEIMMUNITIES 2
@@ -214,6 +214,8 @@ void SetEliteFlag(int f, int flagside) {
 	else {
 		switch (f) {
 			case DND_BULLET_IMMUNE_POW:
+				if(IsSet(CheckInventory("MonsterTraits"), DND_SILVER_WEAKNESS_POW))
+					SetInventory("MonsterTraits", ClearBit(CheckInventory("MonsterTraits"), DND_SILVER_WEAKNESS_POW));
 				GiveInventory("MakePhysicalImmune", 1);
 			break;
 			case DND_ENERGY_RESIST_POW:
@@ -253,17 +255,28 @@ void SetEliteFlag(int f, int flagside) {
 	}
 }
 
+bool CheckEliteCvar(int t, int flagtype) {
+	bool res = 0;
+	if(GetCVar("dnd_no_immunity")) {
+		res |= (!flagtype && ((t == DND_EXPLOSIVE_NONE_POW))) ||
+			   (flagtype && ((t == DND_BULLET_IMMUNE_POW) | (t == DND_ENERGY_IMMUNE_POW) | (t == DND_MAGIC_IMMUNE_POW) | (t == DND_ELEMENTAL_IMMUNE_POW)));
+	}
+	if(GetCVar("dnd_no_reflect"))
+		res |= !flagtype && t == DND_REFLECTIVE_POW;
+	return res;
+}
+
 bool HasTraitExceptions(int t, int flagtype) {
 	if(!flagtype)
 		return ((t == DND_EXPLOSIVE_RESIST_POW && IsSet(CheckInventory("MonsterTraits"), DND_EXPLOSIVE_IMMUNE_POW)) || (t == DND_EXPLOSIVE_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits"), DND_EXPLOSIVE_RESIST_POW))) ||
 			   ((t == DND_EXPLOSIVE_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits"), DND_EXPLOSIVE_NONE_POW)) || (t == DND_EXPLOSIVE_NONE_POW && IsSet(CheckInventory("MonsterTraits"), DND_EXPLOSIVE_IMMUNE_POW))) ||
 			   ((t == DND_EXPLOSIVE_RESIST_POW && IsSet(CheckInventory("MonsterTraits"), DND_EXPLOSIVE_NONE_POW)) || (t == DND_EXPLOSIVE_NONE_POW && IsSet(CheckInventory("MonsterTraits"), DND_EXPLOSIVE_RESIST_POW))) ||
-			   ((t == DND_BULLET_RESIST_POW && IsSet(CheckInventory("MonsterTraits2"), DND_BULLET_IMMUNE_POW)));
+			   ((t == DND_BULLET_RESIST_POW && IsSet(CheckInventory("MonsterTraits2"), DND_BULLET_IMMUNE_POW))) || CheckEliteCvar(t, flagtype);
 	else
 		return ((t == DND_ENERGY_RESIST_POW && IsSet(CheckInventory("MonsterTraits2"), DND_ENERGY_IMMUNE_POW)) || (t == DND_ENERGY_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits2"), DND_ENERGY_RESIST_POW))) ||
 			   ((t == DND_MAGIC_RESIST_POW && IsSet(CheckInventory("MonsterTraits2"), DND_MAGIC_IMMUNE_POW)) || (t == DND_MAGIC_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits2"), DND_MAGIC_RESIST_POW))) ||
 			   ((t == DND_ELEMENTAL_RESIST_POW && IsSet(CheckInventory("MonsterTraits2"), DND_ELEMENTAL_IMMUNE_POW))) || ((t == DND_ELEMENTAL_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits2"), DND_ELEMENTAL_RESIST_POW))) ||
-			   ((t == DND_BULLET_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits"), DND_BULLET_RESIST_POW)));;
+			   ((t == DND_BULLET_IMMUNE_POW && IsSet(CheckInventory("MonsterTraits"), DND_BULLET_RESIST_POW))) || CheckEliteCvar(t, flagtype);
 }
 
 bool HasMaxImmunes() {
@@ -271,11 +284,15 @@ bool HasMaxImmunes() {
 		   !!IsSet("MonsterTraits2", DND_BULLET_IMMUNE_POW) + 
 		   !!IsSet("MonsterTraits2", DND_ENERGY_IMMUNE_POW) +
 		   !!IsSet("MonsterTraits2", DND_MAGIC_IMMUNE_POW) +
-		   !!IsSet("MonsterTraits2", DND_ELEMENTAL_IMMUNE_POW) == DND_MAX_ELITEIMMUNITIES;
+		   !!IsSet("MonsterTraits2", DND_ELEMENTAL_IMMUNE_POW) >= DND_MAX_ELITEIMMUNITIES;
 }
 
 bool IsImmunityFlag(int flag, int flagside) {
 	return (!flagside && flag == DND_EXPLOSIVE_NONE_POW) || (flagside && (flag == DND_BULLET_IMMUNE_POW || flag == DND_ENERGY_IMMUNE_POW || flag == DND_MAGIC_IMMUNE_POW || flag == DND_ELEMENTAL_IMMUNE_POW));
+}
+
+bool CheckImmunityFlagStatus(int try_trait, int flagside) {
+	return !(IsImmunityFlag(try_trait, flagside) && HasMaxImmunes());
 }
 
 void DecideEliteTraits(int count) {
@@ -294,7 +311,7 @@ void DecideEliteTraits(int count) {
 
 		if(!IsSet(CheckInventory(tocheck), EliteTraitNumbers[try_trait])) {
 			// dont give explosive immunity with resist etc
-			if(!HasTraitExceptions(EliteTraitNumbers[try_trait], flagside) || (IsImmunityFlag(try_trait, flagside) && !HasMaxImmunes())) {
+			if(!HasTraitExceptions(EliteTraitNumbers[try_trait], flagside) && CheckImmunityFlagStatus(try_trait, flagside)) {
 				SetEliteFlag(EliteTraitNumbers[try_trait], flagside);
 				--count;
 			}

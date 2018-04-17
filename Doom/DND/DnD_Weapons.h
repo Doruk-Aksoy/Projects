@@ -7,10 +7,11 @@ enum {
 	DND_WEAPON_FIST,
 	DND_WEAPON_CHAINSAW,
 	DND_WEAPON_DOUBLECHAINSAW,
-	DND_WEAPON_SICKLE,
 	DND_WEAPON_EXCALIBAT,
-	DND_WEAPON_DUSKBLADE,
+	DND_WEAPON_KATANA,
 	DND_WEAPON_INFERNOSWORD,
+	DND_WEAPON_DUSKBLADE,
+	DND_WEAPON_SICKLE,
 	
 	DND_WEAPON_PISTOL,
 	DND_WEAPON_AKIMBOPISTOL,
@@ -37,6 +38,7 @@ enum {
 	DND_WEAPON_MACHINEGUN,
 	DND_WEAPON_HEAVYMACHINEGUN,
 	DND_WEAPON_LEADSPITTER,
+	DND_WEAPON_DEMONSEALER,
 	DND_WEAPON_TEMPLARMG,
 	DND_WEAPON_RIOTCANNON,
 	DND_WEAPON_ACIDRIFLE,
@@ -108,10 +110,11 @@ str Weapons[MAXWEPS][7] = {
 	 { " Fists ",							"Fist",						"1",		" ",				" ",							"StartOnly",				"FISTICO"				},
 	 { " Chainsaw ",						"Chainsaw",					"1",		" ",				" ",							"GotChainsaw",				"CSAWA0"				},
 	 { "Upgraded Chainsaw",					"Dual Chainsaw",			"1",		" ",				" ",							"GotChainsaw",				"CSW2A0"				},
-	 { "Sickle",							"Necromancer's Sickle", 	"1",		" ",				" ",							"GotChainsaw",				"SICKLICO"  			},
 	 { "Excalibat",							"Excalibat",				"1",		"BatCharge",		"Souls",						"GotChainsaw",				"EBATICO"				},
-	 { "ResMelee1",							"Dusk Blade",				"1",		"SwordHitCharge",	"Souls",						"GotChainsaw",				"DUSKBICO"				},
-     { "ResMelee2",							"Inferno Sword",			"1",		"Souls",			" ",							"GotChainsaw",				"INFSICO1"				},
+	 { "Katana",							"Katana",					"1",		" ",				" ",							"GotChainsaw",				"JFISZ0"				},
+	 { "ResMelee1",							"Inferno Sword",			"1",		"Souls",			" ",							"GotChainsaw",				"INFSICO1"				},
+	 { "Dusk Blade",						"Dusk Blade",				"1",		"SwordHitCharge",	"Souls",						"GotChainsaw",				"DUSKBICO"				},
+     { "Sickle",							"Necromancer's Sickle", 	"1",		" ",				" ",							"GotChainsaw",				"SICKLICO"  			},
 	 
 	 { " Pistol ",							"Pistol",					"2",		"Clip",				" ",							"StartOnly",				"COLTICO"				},
 	 { " Akimbo Pistols ",					"Dual Pistols",				"2",		"Clip",				" ",							"GotAkimbo",				"AKIMICO"				},
@@ -140,6 +143,7 @@ str Weapons[MAXWEPS][7] = {
 	 { " Machine gun ", 					"Machine Gun",				"4",		"Clip",				"MGClip",				    	"GotMG",					"WASGA0"				},
 	 { "Upgraded Machine Gun",			    "H. Machine Gun",			"4",		"Clip",				"MGClip2",				    	"GotMG",					"WSG2ICO" 			    },
 	 { "Upgraded Machine Gun2",			    "Lead Spitter",				"4",		"Clip",				"MGClip3",				    	"GotMG",					"QWOPA0"				},
+	 { "Upgraded Machine Gun3",			    "Demon Sealer",				"4",		"DsealAmmo",		" ",				    		"GotMG",					"JPLAZ0"				},
 	 { "ResMG1",							"Templar MG",				"4",		"Clip",				"MGClip4",				    	"GotMG",					"RW03X0"				},
 	 { "ResMG2",                            "Riot Cannon",              "4",        "RiotgunShell",     "RiotgunClip",                  "GotMG",                    "RIOTI0"                },
      { "ResMG3",							"Acid Rifle",				"4", 		"AcidAmmo",			"AcidClip",						"GotMG",					"RIF2Y0"				},
@@ -184,13 +188,50 @@ str Weapons[MAXWEPS][7] = {
 	 { "SMG",								"SMG",						"9",		"SMGAmmo",			" ",							"GotSMG",					"SMGICO"  			    },
 	 { "Hellforge Cannon",				    "Hellforge Cannon",			"9",		"IronBalls",		"IronBalls",					"GotHell",					"WHFCA0"  			    },
 	 { "Bloodfiend Spine",				    "Bloodfiend Spine",			"9",		"BloodAmmo",		"BloodAmmo",			        "GotGore",					"WGORA0"  			    },
-	 { "Enforcer Rifle",					"Enforcer Rifle",			"9",		"LaserAmmo",		"LaserAmmo",			        "GotRifle",					"ENRPA0"  			    },
+	 { "Enforcer Rifle",					"Laser Rifle",				"9",		"LaserAmmo",		"LaserAmmo",			        "GotRifle",					"ENRPA0"  			    },
 	 { "Venom",								"Venom",					"9",		"VenomAmmo",		"VenomAmmo",			        "GotVenom",					"VENOICO" 			    },
 	 { "Demon Heart",						"Demon Heart",				"9",		"HeartAmmo",		" ",							"GotHeart",					"HARTICO" 			    },
 	 { "DarkServantGloves",                 "Dark Servant Gloves",      "9",        "DarkServantEnergy"," ",                            "GotGloves",                "DSGNTICO"              },
 	 { "Nailgun2",                          "Heavy Nailgun",            "9",        "BigNail",          " ",                            "GotNailgun2",              "NLCGF0"                },
 	 { "Berettas",                          "Akimbo Berettas",          "9",        "BerettaAmmo",      " ",                            "GotBerettas",              "PAKMX0"                },
 	 { "Plasma Bolter",						"Plasma Bolter",			"9",		"PlasmaBolterAmmo",	" ",							"GotPlasmaBolter",			"PBL9X0"				}
+};
+
+#define WEPCHECK_SLOT1 "P_Slot1Replaced"
+#define WEPCHECK_SLOT1L "P_Slot1Luxury"
+#define WEPCHECK_SLOT2 "P_Slot2Replaced"
+#define WEPCHECK_SLOT2L "P_Slot2Luxury"
+#define WEPCHECK_SLOT3 "P_Slot3Replaced"
+#define WEPCHECK_SLOT3X "P_Slot3XReplaced"
+#define WEPCHECK_SLOT3L "P_Slot3Luxury"
+#define WEPCHECK_SLOT4 "P_Slot4Replaced"
+#define WEPCHECK_SLOT4L "P_Slot4Luxury"
+#define WEPCHECK_SLOT5 "P_Slot5Replaced"
+#define WEPCHECK_SLOT5L "P_Slot5Luxury"
+#define WEPCHECK_SLOT6 "P_Slot6Replaced"
+#define WEPCHECK_SLOT6L "P_Slot6Luxury"
+#define WEPCHECK_SLOT7 "P_Slot7Replaced"
+#define WEPCHECK_SLOT7L "P_Slot7Luxury"
+#define WEPCHECK_SLOT8L "P_Slot8Luxury"
+
+#define MAX_WEPCONDITION_CHECKERS 16
+str WeaponConditionCheckers[MAX_WEPCONDITION_CHECKERS] = {
+	WEPCHECK_SLOT1,
+	WEPCHECK_SLOT1L,
+	WEPCHECK_SLOT2,
+	WEPCHECK_SLOT2L,
+	WEPCHECK_SLOT3,
+	WEPCHECK_SLOT3X,
+	WEPCHECK_SLOT3L,
+	WEPCHECK_SLOT4,
+	WEPCHECK_SLOT4L,
+	WEPCHECK_SLOT5,
+	WEPCHECK_SLOT5L,
+	WEPCHECK_SLOT6,
+	WEPCHECK_SLOT6L,
+	WEPCHECK_SLOT7,
+	WEPCHECK_SLOT7L,
+	WEPCHECK_SLOT8L
 };
 
 enum {
@@ -211,17 +252,17 @@ str WeaponOverheatItems[MAXOVERHEATWEPS] = {
 // 32 overheat weapons supported
 int PlayerRunsOverheat[MAXPLAYERS] = { 0 };
 
-#define MAXWEPUPGRADES 6
+#define MAXWEPUPGRADES 7
 #define MAXNORMALWEPSLOTS 8
 str SlotWeapons[MAXNORMALWEPSLOTS][MAXWEPUPGRADES] = {
-	{ " Chainsaw ", "Upgraded Chainsaw", "Sickle", "Excalibat", "ResMelee1", "ResMelee2" },
-	{ "Magnum", " Akimbo Pistols ", "Laser Pistol", "ResPistol1", "ResPistol2" },
-	{ " Shotgun ", "Upgraded Shotgun", "Upgraded Shotgun2", "ResShotgun1", "ResShotgun2", "" },
-	{ " Super Shotgun ", "Upgraded Super Shotgun", "Upgraded Super Shotgun2", "ResSSG1", "ResSSG2", "" },
-	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "ResMG1", "ResMG2", "ResMG3" },
-	{ "Rocket Launcher", "Upgraded Rocket Launcher", "Upgraded Rocket Launcher2", "ResRL1", "ResRL2", "ResRL3" },
-	{ "Plasma Rifle", "Upgraded Plasma Rifle", "Upgraded Plasma Rifle2", "Upgraded Plasma Rifle2", "ResPlasma1", "ResPlasma2" },
-	{ "BFG 9000", "Upgraded BFG 9000", "Devastator", "MFG", "ResBFG1", "ResBFG2" },
+	{ " Chainsaw ", "Upgraded Chainsaw", "Katana", "Excalibat", "ResMelee1", "" },
+	{ "Magnum", " Akimbo Pistols ", "Laser Pistol", "ResPistol1", "ResPistol2", "" },
+	{ " Shotgun ", "Upgraded Shotgun", "Upgraded Shotgun2", "ResShotgun1", "ResShotgun2", "", "" },
+	{ " Super Shotgun ", "Upgraded Super Shotgun", "Upgraded Super Shotgun2", "ResSSG1", "ResSSG2", "", "" },
+	{ " Machine Gun ", "Upgraded Machine Gun", "Upgraded Machine Gun2", "Upgraded Machine Gun3", "ResMG1", "ResMG2", "ResMG3" },
+	{ "Rocket Launcher", "Upgraded Rocket Launcher", "Upgraded Rocket Launcher2", "ResRL1", "ResRL2", "ResRL3", "" },
+	{ "Plasma Rifle", "Upgraded Plasma Rifle", "Upgraded Plasma Rifle2", "Upgraded Plasma Rifle3", "ResPlasma1", "ResPlasma2", "" },
+	{ "BFG 9000", "Upgraded BFG 9000", "Devastator", "MFG", "ResBFG1", "ResBFG2", "" },
 };
 
 // weapon mod data, mod_id contains the modifier, low and high are the rolled values
@@ -255,8 +296,8 @@ typedef struct {
 global wep_info_T 2: Player_Weapon_Infos[MAXPLAYERS][MAXWEPS];
 
 void ResetWeaponMods(int pnum) {
-	int i;
-	for(int j = 0; j < MAXWEPS; ++j) {
+	int i, j;
+	for(j = 0; j < MAXWEPS; ++j) {
 		Player_Weapon_Infos[pnum][j].enchants = 0;
 		// not saved right now as they aren't added yet
 		for(i = 0; i < MAX_WEP_MODS; ++i) {

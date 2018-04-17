@@ -11,6 +11,7 @@
 #define CHARISMA_PERCENT 5 // percentage
 #define CHARISMA_DIV 10 // for fractional
 #define CHARISMA_REDUCE CHARISMA_DIV / CHARISMA_PERCENT
+#define CHARISMA_REDUCE_AFTER100 CHARISMA_REDUCE * 2
 
 #define TALENT_CAP 100
 
@@ -48,7 +49,7 @@ typedef struct rect {
 	int botright_y;
 } rect_T;
 
-#define MAX_MENU_BOXES 16
+#define MAX_MENU_BOXES 20
 typedef struct mp {
 	rect_T MenuRectangles[MAX_MENU_BOXES];
 	int cursize;
@@ -159,7 +160,8 @@ enum {
 	TRADE_ABILITY = 16,
 	TRADE_ARTIFACT = 32,
 	TRADE_TALENT = 64,
-	TRADE_ARMOR = 128
+	TRADE_ARMOR = 128,
+	TRADE_ARMOR_REPLACE = 256
 };
 
 // Popup Definitions
@@ -173,6 +175,7 @@ enum {
  // MENU IDS
 enum {
 	RPGMENUCURSORID = 224,
+	RPGMENUPAGEID = 226,
 	RPGMENUID,
 	RPGMENULARRID,
 	RPGMENURARRID,
@@ -230,10 +233,11 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		// Weapons
 		// 1
 		{ 3000,	 1 },
-		{ 3500,  1 },
 		{ 3750,  1 },
-		{ 8500,  1 },
+		{ 3750,  1 },
 		{ 8000,  1 },
+		{ 8500,  1 },
+		{ 6500,  1 },
 		
 		// 2
 		{ 2000,  1 },
@@ -260,6 +264,7 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		// 4
 		{ 4000,  1 },
 		{ 4500,  1 },
+		{ 6000,  1 },
 		{ 5750,  1 },
         { 6500,  1 },
 		{ 7000,  1 },
@@ -331,14 +336,15 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		{ 100,		1 },
 		{ 75,		1 },
 		{ 275,		1 },
+		{ 65,       1 },
 		
 		// Special Ammunition
-		{ 550,	    1 },
-		{ 900,	    1 },
-		{ 1000,	    1 },
-        { 950,      1 },
-		{ 1000,     1 },
-		{ 1500,	    1 },
+		{ 475,	    1 },
+		{ 825,	    1 },
+		{ 925,	    1 },
+        { 875,      1 },
+		{ 925,      1 },
+		{ 1250,	    1 },
 		
 		
 		// Abilities - 1
@@ -363,22 +369,22 @@ int ShopInfo[MAXSHOPITEMS][2] =
 		{ 1500,	 1 },
 		{ 1500,	 1 },
 		{ 1500,	 1 },
-        { 1500,  1 },
 		
 		// Armor costs
 		{ 4500,	 1 },
 		{ 9000,  1 },
 		{ 13500, 1 },
 		{ 18000, 1 },
-		{ 12000, 1 },
-		{ 12000, 1 },
-		{ 12000, 1 },
-		{ 12000, 1 },
-        { 12000, 1 },
+		
+		{ 10000, 1 },
+		{ 10000, 1 },
+		{ 10000, 1 },
+		{ 10000, 1 },
+        { 10000, 1 },
         
         { 22500, 1 },
 		{ 18500, 1 },
-		{ 8000,  1 },
+		{ 8500,  1 },
 		{ 15000, 1 },
 		{ 17000, 1 },
 		{ 12000, 1 },
@@ -399,156 +405,177 @@ int ShopInfo[MAXSHOPITEMS][2] =
 #define MAX_RESEARCH_REQUIREMENTS 3
 // Basis for multi-research requiring stuff is here
 int ItemResearchRequirements[MAXSHOPITEMS][MAX_RESEARCH_REQUIREMENTS] = {
-	{ -1, -1, -1 },
-	{ RES_SLOT1OCCULT, -1, -1 },
-	{ RES_SLOT1OCCULT, -1, -1 },
-	{ RES_SLOT1UPG1, -1, -1 },
-	{ RES_SLOT1UPG2, -1, -1 },
 	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT2UPG1, -1, -1 },
-	{ RES_SLOT2UPG2, -1, -1 },
-	{ RES_SLOT2LUXURY, -1, -1 },
-	{ RES_SLOT2LUXURY, -1, -1 },
+	// wep slot 1
+		{ -1, -1, -1 },
+		{ RES_SLOT1OCCULT, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT1UPG2, -1, -1 },
+		{ RES_SLOT1UPG1, -1, -1 },
+		{ RES_SLOT1OCCULT, -1, -1 },
+		
+	// wep slot 2
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT2UPG1, -1, -1 },
+		{ RES_SLOT2UPG2, -1, -1 },
+		{ RES_SLOT2LUXURY, -1, -1 },
+		{ RES_SLOT2LUXURY, -1, -1 },
+		
+	// wep slot 3
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT3UPG1, -1, -1 },
+		{ RES_SLOT3UPG2, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT3SSGUPG1, -1, -1 },
+		{ RES_SLOT3SSGUPG2, -1, -1 },
+		
+	// wep slot 3 - 2
+		{ RES_SLOT3LUXURY, -1, -1 },
+		{ RES_SLOT3LUXURY, -1, -1 },
+		
+	// wep slot 4
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT4UPG1, -1, -1 },
+		{ RES_SLOT4UPG2, -1, -1 },
+		{ RES_SLOT4UPG3, -1, -1 },
+		{ RES_SLOT4LUXURY, -1, -1 },
+		{ RES_SLOT4LUXURY, -1, -1 },
+		
+	// wep slot 5
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT5UPG1, -1, -1 },
+		{ RES_SLOT5UPG2, -1, -1 },
+		{ RES_SLOT5UPG3, -1, -1 },
+		{ RES_SLOT5GL, -1, -1 },
+		{ RES_SLOT5LUXURY, -1, -1 },
+		{ RES_SLOT5LUXURY, -1, -1 },
+		
+	// wep slot 6
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT6UPG1, -1, -1 },
+		{ RES_SLOT6UPG2, -1, -1 },
+		{ RES_SLOT6LUXURY, -1, -1 },
+		{ RES_SLOT6LUXURY, -1, -1 },
+		
+	// wep slot 7
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT7UPG1, -1, -1 },
+		{ RES_SLOT7UPG2, -1, -1 },
+		{ RES_SLOT7LUXURY, -1, -1 },
+		{ RES_SLOT7LUXURY, -1, -1 },
+		
+	// wep slot 8
+		{ RES_SLOT8REVEAL, -1, -1 },
+		{ RES_SLOT8REVEAL, -1, -1 },
+		{ RES_SLOT8REVEAL, -1, -1 },
+		{ RES_SLOT8REVEAL, -1, -1 },
+		
+	// ammo 1
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT3LUXURY, -1, -1 },
+		{ RES_SLOT4LUXURY, -1, -1 },
+		{ RES_SLOT4LUXURY, -1, -1 },
+		{ RES_SLOT5LUXURY, -1, -1 },
+		{ RES_SLOT5GL, RES_SLOT5UPG2, -1 },
+		{ RES_SLOT6LUXURY, -1, -1 },
+		
+	// ammo 2
+		{ RES_SLOT6LUXURY, -1, -1 },
+		{ RES_SLOT7LUXURY, -1, -1 },
+		{ RES_SLOT3LUXURY, -1, -1 },
+		{ RES_SLOT2LUXURY, -1, -1 },
+		{ RES_SLOT3SSGUPG1, -1, -1 },
+		{ RES_SLOT4UPG2, -1, -1 },
+		{ RES_SLOT5UPG1, -1, -1 },
+		{ RES_SLOT6UPG1, -1, -1 },
+		{ RES_SLOT6UPG2, -1, -1 },
+		{ RES_SLOT3UPG2, -1, -1 },
+		
+	// ammo 3
+		{ RES_SLOT7UPG1, -1, -1 },
+		{ RES_SLOT4UPG3, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_SLOT2UPG2, -1, -1 },
+		{ RES_SLOT7UPG2, -1, -1 },
+		{ -1, -1, -1 },
+		
+	// ammo special
+		{ RES_FLECHETTE, -1, -1 },
+		{ RES_PIERCING, -1, -1 },
+		{ RES_ELECTRIC, -1, -1 },
+		{ RES_NITRO, -1, -1 },
+		{ RES_SONICGRENADE, -1, -1 },
+		{ RES_HEGRENADE, -1, -1 },
+		
+	// abilities
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_OCCULTABILITY, -1, -1 },
+		{ RES_NANOTECH, -1, -1 },
+		{ RES_NANOTECH, -1, -1 },
+		{ RES_OCCULTABILITY, -1, -1 },
+		{ RES_NANOTECH, -1, -1 },
+		{ RES_OCCULTABILITY, -1, -1 },
+		{ RES_OCCULTABILITY, -1, -1 },
+		{ -1, -1, -1 },
+		
+	// talents
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		
+	// armor 1
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
 	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT3UPG1, -1, -1 },
-    { RES_SLOT3UPG2, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT3SSGUPG1, -1, -1 },
-	{ RES_SLOT3SSGUPG2, -1, -1 },
-	
-	{ RES_SLOT3LUXURY, -1, -1 },
-	{ RES_SLOT3LUXURY, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT4UPG1, -1, -1 },
-    { RES_SLOT4UPG2, -1, -1 },
-	{ RES_SLOT4UPG3, -1, -1 },
-	{ RES_SLOT4LUXURY, -1, -1 },
-	{ RES_SLOT4LUXURY, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT5UPG1, -1, -1 },
-	{ RES_SLOT5UPG2, -1, -1 },
-	{ RES_SLOT5UPG3, -1, -1 },
-	{ RES_SLOT5GL, -1, -1 },
-	{ RES_SLOT5LUXURY, -1, -1 },
-	{ RES_SLOT5LUXURY, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT6UPG1, -1, -1 },
-    { RES_SLOT6UPG2, -1, -1 },
-	{ RES_SLOT6LUXURY, -1, -1 },
-	{ RES_SLOT6LUXURY, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT7UPG1, -1, -1 },
-	{ RES_SLOT7UPG2, -1, -1 },
-	{ RES_SLOT7LUXURY, -1, -1 },
-	{ RES_SLOT7LUXURY, -1, -1 },
-	
-	{ RES_SLOT8REVEAL, -1, -1 },
-	{ RES_SLOT8REVEAL, -1, -1 },
-	{ RES_SLOT8REVEAL, -1, -1 },
-	{ RES_SLOT8REVEAL, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT3LUXURY, -1, -1 },
-	{ RES_SLOT4LUXURY, -1, -1 },
-	{ RES_SLOT4LUXURY, -1, -1 },
-	{ RES_SLOT5LUXURY, -1, -1 },
-	{ RES_SLOT5GL, RES_SLOT5UPG2, -1 },
-	{ RES_SLOT6LUXURY, -1, -1 },
-	
-	{ RES_SLOT6LUXURY, -1, -1 },
-	{ RES_SLOT7LUXURY, -1, -1 },
-	{ RES_SLOT3LUXURY, -1, -1 },
-	{ RES_SLOT2LUXURY, -1, -1 },
-    { RES_SLOT3SSGUPG1, -1, -1 },
-    { RES_SLOT4UPG2, -1, -1 },
-    { RES_SLOT5UPG1, -1, -1 },
-    { RES_SLOT6UPG1, -1, -1 },
-    { RES_SLOT6UPG2, -1, -1 },
-    { RES_SLOT3UPG1, -1, -1 },
-	
-    { RES_SLOT7UPG1, -1, -1 },
-	{ RES_SLOT4UPG3, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_SLOT2UPG2, -1, -1 },
-	{ RES_SLOT7UPG2, -1, -1 },
-	
-	{ RES_FLECHETTE, -1, -1 },
-	{ RES_PIERCING, -1, -1 },
-	{ RES_ELECTRIC, -1, -1 },
-    { RES_NITRO, -1, -1 },
-	
-	{ RES_SONICGRENADE, -1, -1 },
-	{ RES_HEGRENADE, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_OCCULTABILITY, -1, -1 },
-	{ RES_NANOTECH, -1, -1 },
-	{ RES_NANOTECH, -1, -1 },
-	{ RES_OCCULTABILITY, -1, -1 },
-	{ RES_NANOTECH, -1, -1 },
-	{ RES_OCCULTABILITY, -1, -1 },
-	{ RES_OCCULTABILITY, -1, -1 },
-	{ -1, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-    { RES_RAREARMOR, -1, -1 },
-	
-    { RES_SUPERARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	{ RES_RAREARMOR, -1, -1 },
-	
-	{ -1, -1, -1 },
-	{ RES_OCCULTARTIFACT, -1, -1 },
-	{ -1, -1, -1 },
-	{ RES_OCCULTARTIFACT, -1, -1 },
-	{ RES_OCCULTARTIFACT, -1, -1 },
-	{ RES_OCCULTARTIFACT, -1, -1 },
-	{ RES_OCCULTARTIFACT, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 },
-	{ -1, -1, -1 }
+	// armor 2
+		{ RES_SUPERARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		{ RES_RAREARMOR, -1, -1 },
+		
+	// arti
+		{ -1, -1, -1 },
+		{ RES_OCCULTARTIFACT, -1, -1 },
+		{ -1, -1, -1 },
+		{ RES_OCCULTARTIFACT, -1, -1 },
+		{ RES_OCCULTARTIFACT, -1, -1 },
+		{ RES_OCCULTARTIFACT, -1, -1 },
+		{ RES_OCCULTARTIFACT, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 },
+		{ -1, -1, -1 }
 };
 
 #define TALENT_COST_INCREASE 1000
+#define TALENT_SCALE_DOUBLER_MARK 25
 
 #define DND_ARTI_BUYONCE_END ARTI_BOOK
 enum {
@@ -570,69 +597,71 @@ enum {
 #define SHOPNAME_TYPE 3
 // rework these later reducing weapon names from two cols
 str ShopItemNames[MAXSHOPITEMS][4] = {
-	{ "Upgraded Chainsaw",					"Dual Chainsaw",					"P_Slot1Replaced",		"0"  	    },
-	{ "Sickle",								"Necro's Sickle",					"P_Slot1Replaced",		"0"		    },
-	{ "Excalibat",							"Excalibat",						"P_Slot1Replaced",		"0"		    },
-	{ "ResMelee1",							"Dusk Blade",						"P_Slot1Replaced",		"0"			},
-	{ "ResMelee2",							"Inferno Sword",					"P_Slot1Replaced",		"0"			},
+	{ "Upgraded Chainsaw",					"Dual Chainsaw",					WEPCHECK_SLOT1,			"0"  	    },
+	{ "Excalibat",							"Excalibat",						WEPCHECK_SLOT1,			"0"		    },
+	{ "Katana",								"Katana",							WEPCHECK_SLOT1,			"0"			},
+	{ "ResMelee1",							"Inferno Sword",					WEPCHECK_SLOT1,			"0"			},
+	{ "Dusk Blade",							"Dusk Blade",						WEPCHECK_SLOT1L,		"1"			},
+	{ "Sickle",								"Necro's Sickle",					WEPCHECK_SLOT1L,		"1"		    },
 	
-	{ " Akimbo Pistols ",					"Akimbo Longslides",				"P_Slot2Replaced",		"0"  	    },
-	{ "Magnum", 							"Magnum",							"P_Slot2Replaced",		"0"  	    },
-	{ "Laser Pistol",						"Laser Pistol",						"P_Slot2Replaced",		"0"		    },
-	{ "ResPistol1",							"Assault Rifle",					"P_Slot2Replaced",		"0"		    },
-	{ "ResPistol2",							"Viper Staff",						"P_Slot2Replaced",		"0"			},
-	{ "RubyWand",							"Ruby Wand",						"P_Slot2Luxury",		"1"			},
-	{ "ScatterGun",							"Scatter Pistol",					"P_Slot2Luxury",		"1"		    },
+	{ " Akimbo Pistols ",					"Akimbo Longslides",				WEPCHECK_SLOT2,			"0"  	    },
+	{ "Magnum", 							"Magnum",							WEPCHECK_SLOT2,			"0"  	    },
+	{ "Laser Pistol",						"Laser Pistol",						WEPCHECK_SLOT2,			"0"		    },
+	{ "ResPistol1",							"Assault Rifle",					WEPCHECK_SLOT2,			"0"		    },
+	{ "ResPistol2",							"Viper Staff",						WEPCHECK_SLOT2,			"0"			},
+	{ "RubyWand",							"Ruby Wand",						WEPCHECK_SLOT2L,		"1"			},
+	{ "ScatterGun",							"Scatter Pistol",					WEPCHECK_SLOT2L,		"1"		    },
 	
-	{ "Upgraded Shotgun",					"Purifier",							"P_Slot3Replaced",		"0"  		},
-	{ "Upgraded Shotgun2", 					"Auto Shotgun",						"P_Slot3Replaced",		"0" 		},
-	{ "ResShotgun1",						"Deadlock",							"P_Slot3Replaced",		"0"		    },
-	{ "ResShotgun2",                        "Nitrogen Crossbow",                "P_Slot3Replaced",      "0"         },
-	{ "Upgraded Super Shotgun",			    "Heavy SSG",						"P_Slot3XReplaced",	    "0" 		},
-	{ "Upgraded Super Shotgun2",		    "Erasus",							"P_Slot3XReplaced",	    "0" 		},
-	{ "ResSSG1",							"Plasma Cannon",					"P_Slot3XReplaced",	    "0"		    },
-	{ "ResSSG2",							"Shocker",							"P_Slot3XReplaced",		"0"			},
+	{ "Upgraded Shotgun",					"Purifier",							WEPCHECK_SLOT3,			"0"  		},
+	{ "Upgraded Shotgun2", 					"Killstorm",						WEPCHECK_SLOT3,			"0" 		},
+	{ "ResShotgun1",						"Deadlock",							WEPCHECK_SLOT3,			"0"		    },
+	{ "ResShotgun2",                        "Nitrogen Crossbow",                WEPCHECK_SLOT3,     	"0"         },
+	{ "Upgraded Super Shotgun",			    "Heavy SSG",						WEPCHECK_SLOT3X,		"0" 		},
+	{ "Upgraded Super Shotgun2",		    "Erasus",							WEPCHECK_SLOT3X,		"0" 		},
+	{ "ResSSG1",							"Plasma Cannon",					WEPCHECK_SLOT3X,		"0"		    },
+	{ "ResSSG2",							"Shocker",							WEPCHECK_SLOT3X,		"0"			},
 	
-	{ "Silver Gun",						    "Silver Gun",						"P_Slot3Luxury",		"1"	        },
-	{ "Slayer",								"Slayer",							"P_Slot3Luxury",		"1"		    },
+	{ "Silver Gun",						    "Silver Gun",						WEPCHECK_SLOT3L,		"1"	        },
+	{ "Slayer",								"Slayer",							WEPCHECK_SLOT3L,		"1"		    },
 		
-	{ "Upgraded Machine Gun",				"Heavy Machine Gun",				"P_Slot4Replaced",  	"0"     	},
-	{ "Upgraded Machine Gun2",			    "Lead Spitter",						"P_Slot4Replaced", 		"0"		    },
-	{ "ResMG1",								"Templar MG",						"P_Slot4Replaced",		"0"		    },
-	{ "ResMG2",                             "Riot Cannon",                      "P_Slot4Replaced",      "0"         },
-	{ "ResMG3",								"Acid Rifle",						"P_Slot4Replaced",		"0"			},
-	{ " Minigun ",							"Minigun",							"P_Slot4Luxury",   		"1"		    },
-	{ "Ebony Cannon",						"Ebony Cannon",						"P_Slot4Luxury",   		"1"		    },
+	{ "Upgraded Machine Gun",				"Heavy Machine Gun",				WEPCHECK_SLOT4,  		"0"     	},
+	{ "Upgraded Machine Gun2",			    "Lead Spitter",						WEPCHECK_SLOT4, 		"0"		    },
+	{ "Upgraded Machine Gun3",			    "Demon Sealer",						WEPCHECK_SLOT4, 		"0"		    },
+	{ "ResMG1",								"Templar MG",						WEPCHECK_SLOT4,			"0"		    },
+	{ "ResMG2",                             "Riot Cannon",                      WEPCHECK_SLOT4,      	"0"         },
+	{ "ResMG3",								"Acid Rifle",						WEPCHECK_SLOT4,			"0"			},
+	{ " Minigun ",							"Minigun",							WEPCHECK_SLOT4L,   		"1"		    },
+	{ "Ebony Cannon",						"Ebony Cannon",						WEPCHECK_SLOT4L,   		"1"		    },
 	
-	{ "Upgraded Rocket Launcher",		    "Torpedo Launcher",				    "P_Slot5Replaced",  	"0"		    },
-	{ "Upgraded Rocket Launcher2",		    "Mercury Launcher",				    "P_Slot5Replaced",  	"0"		    },
-	{ "ResRL1",								"Meteor Launcher",					"P_Slot5Replaced",		"0"		    },
-	{ "ResRL2",								"Heavy G. Launcher",				"P_Slot5Replaced",		"0"		    },
-	{ "ResRL3",								"Freezer Cannon",					"P_Slot5Replaced",		"0"		    },
-	{ "Grenade Launcher",					"Grenade Launcher",				    "P_Slot5Luxury",    	"1"		    },
-	{ "Upgraded Grenade Launcher",		    "Rotary G. Launcher",				"P_Slot5Luxury",  		"1"		    },
-	{ "Heavy Missile Launcher",				"H. Missile Launcher",				"P_Slot5Luxury",   		"1"		    },
+	{ "Upgraded Rocket Launcher",		    "Torpedo Launcher",				    WEPCHECK_SLOT5,  		"0"		    },
+	{ "Upgraded Rocket Launcher2",		    "Mercury Launcher",				    WEPCHECK_SLOT5,  		"0"		    },
+	{ "ResRL1",								"Meteor Launcher",					WEPCHECK_SLOT5,			"0"		    },
+	{ "ResRL2",								"Heavy G. Launcher",				WEPCHECK_SLOT5,			"0"		    },
+	{ "ResRL3",								"Freezer Cannon",					WEPCHECK_SLOT5,			"0"		    },
+	{ "Grenade Launcher",					"Grenade Launcher",				    WEPCHECK_SLOT5L,    	"1"		    },
+	{ "Upgraded Grenade Launcher",		    "Rotary G. Launcher",				WEPCHECK_SLOT5L,  		"1"		    },
+	{ "Heavy Missile Launcher",				"H. Missile Launcher",				WEPCHECK_SLOT5L,   		"1"		    },
 	
-	{ "Upgraded Plasma Rifle",				"Nuclear P. R.",					"P_Slot6Replaced", 		"0"		    },
-	{ "Upgraded Plasma Rifle2",				"Turel Cannon",						"P_Slot6Replaced",		"0"		    },
-	{ "Upgraded Plasma Rifle3",				"Frost Fang",						"P_Slot6Replaced",		"0"		    },
-	{ "ResPlasma1",							"Flamethrower",						"P_Slot6Replaced",		"0"		    },
-	{ "ResPlasma2",                         "Lightning Gun",                    "P_Slot6Replaced",      "0"         },
-	{ "Nailgun",							"Nailgun",							"P_Slot6Luxury",		"1"	        },
-	{ "Basilisk",							"Basilisk",							"P_Slot6Luxury",		"1"	        },
+	{ "Upgraded Plasma Rifle",				"Nuclear P. R.",					WEPCHECK_SLOT6, 		"0"		    },
+	{ "Upgraded Plasma Rifle2",				"Turel Cannon",						WEPCHECK_SLOT6,			"0"		    },
+	{ "Upgraded Plasma Rifle3",				"Frost Fang",						WEPCHECK_SLOT6,			"0"		    },
+	{ "ResPlasma1",							"Flamethrower",						WEPCHECK_SLOT6,			"0"		    },
+	{ "ResPlasma2",                         "Lightning Gun",                    WEPCHECK_SLOT6,      	"0"         },
+	{ "Nailgun",							"Nailgun",							WEPCHECK_SLOT6L,		"1"	        },
+	{ "Basilisk",							"Basilisk",							WEPCHECK_SLOT6L,		"1"	        },
 	
-	{ "Upgraded BFG 9000",					"BFG 32768",						"P_Slot7Replaced",		"0"		    },
-	{ "Devastator",							"Devastator 5000",					"P_Slot7Replaced",		"0"     	},
-	{ "MFG",								"Destr. Generator",					"P_Slot7Replaced",		"0"		    },
-	{ "ResBFG1",							"Ion Cannon",						"P_Slot7Replaced",		"0"		    },
-	{ "ResBFG2",							"Thunder Staff",					"P_Slot7Replaced",		"0"			},
-	{ "Gauss Rifle",						"Gauss Rifle",						"P_Slot7Luxury",		"1"     	},
-	{ "Rail Gun",							"Railgun",							"P_Slot7Luxury",		"1"     	},
+	{ "Upgraded BFG 9000",					"BFG 32768",						WEPCHECK_SLOT7,			"0"		    },
+	{ "Devastator",							"Devastator 5000",					WEPCHECK_SLOT7,			"0"     	},
+	{ "MFG",								"Destr. Generator",					WEPCHECK_SLOT7,			"0"		    },
+	{ "ResBFG1",							"Ion Cannon",						WEPCHECK_SLOT7,			"0"		    },
+	{ "ResBFG2",							"Thunder Staff",					WEPCHECK_SLOT7,			"0"			},
+	{ "Gauss Rifle",						"Gauss Rifle",						WEPCHECK_SLOT7L,		"1"     	},
+	{ "Rail Gun",							"Railgun",							WEPCHECK_SLOT7L,		"1"     	},
 	
-	{ "Death Staff",						"Death Staff",						"P_Slot8Luxury",		"1"		    },
-	{ "RazorFang",							"Razorfang",						"P_Slot8Luxury",		"1"    	    },
-	{ "Sun Staff",							"Sun Staff",						"P_Slot8Luxury",		"1"     	},
-	{ "Soul Reaver",						"Soul Reaver",						"P_Slot8Luxury",		"1"     	},
+	{ "Death Staff",						"Death Staff",						WEPCHECK_SLOT8L,		"1"		    },
+	{ "RazorFang",							"Razorfang",						WEPCHECK_SLOT8L,		"1"    	    },
+	{ "Sun Staff",							"Sun Staff",						WEPCHECK_SLOT8L,		"1"     	},
+	{ "Soul Reaver",						"Soul Reaver",						WEPCHECK_SLOT8L,		"1"     	},
 	
 	{ "Clip",								"Bullets",							"",						"0"		    },
 	{ "Shell",								"Shells",							"",						"0"		    },
@@ -661,6 +690,7 @@ str ShopItemNames[MAXSHOPITEMS][4] = {
 	{ "EverIce",							"Ever Ice",							"",						"0"			},
 	{ "ViperAmmo",							"Viper Mana",						"",						"0"		 	},
 	{ "ThunderAmmo",						"Thunder Mana",						"",						"0"			},
+	{ "DSealAmmo",							"Dark Seals",						"",						"0"			},
 	
 	{ "FlechetteShell",					    "Flechette Shells",					"",						"0"		    },
 	{ "PiercingShell",						"Magnum Shells",					"",						"0"		    },
@@ -681,8 +711,7 @@ str ShopItemNames[MAXSHOPITEMS][4] = {
 	{ "Ability_SoulStealer",				"Soul Stealing",				    "",						"0"	        },
 	{ "Ability_MonsterInfo",				"Monster Scan",						"",						"0"		    },
 	
-	{ "Talent_Bullet",						"Bullet Talent",					"",						"0"		    },
-	{ "Talent_Shell",						"Shell Talent",						"",						"0"		    },
+	{ "Talent_Ballistic",					"Ballistic Talent",					"",						"0"		    },
 	{ "Talent_Melee",						"Melee Talent",						"",						"0"		    },
 	{ "Talent_Occult",						"Occult Talent",					"",						"0"		    },
 	{ "Talent_Explosive",					"Explosive Talent",					"",						"0"		    },
@@ -742,15 +771,16 @@ str DamageTypeIcons[MAX_DAMAGE_TYPES] = {
 int WeaponDamageTypes[MAXWEPS] = {
 	DTYPE_MELEE,
 	DTYPE_MELEE | DTYPE_OCCULT,
-	DTYPE_MELEE | DTYPE_OCCULT,
-	DTYPE_MELEE | DTYPE_OCCULT,
+	DTYPE_MELEE,
 	DTYPE_MELEE | DTYPE_ELEMENTAL,
+	DTYPE_MELEE | DTYPE_OCCULT,
+	DTYPE_MELEE | DTYPE_OCCULT,
 	
 	DTYPE_BULLET,
 	DTYPE_BULLET,
 	DTYPE_ENERGY,
 	DTYPE_BULLET,
-	DTYPE_ELEMENTAL,
+	DTYPE_OCCULT,
 	DTYPE_ELEMENTAL,
 	DTYPE_BULLET,
 	
@@ -768,6 +798,7 @@ int WeaponDamageTypes[MAXWEPS] = {
 	
 	DTYPE_BULLET,
 	DTYPE_ENERGY,
+	DTYPE_OCCULT,
 	DTYPE_BULLET,
 	DTYPE_SHELL,
 	DTYPE_ELEMENTAL,
@@ -807,10 +838,11 @@ int WeaponDamageTypes[MAXWEPS] = {
 
 struct draw_info WeaponDrawInfo[MAXSHOPWEAPONS] = {
 	{ OBJ_WEP | OBJ_HASCHOICE, 												-1 						},
-	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH,								SHOP_WEP_SICKLE			},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_EXCALIBAT		},
-	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_DUSKBLADE		},
+	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_USESCROLL,								-1						},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_INFERNOSWORD	},
+	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_DUSKBLADE		},
+	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH,								SHOP_WEP_SICKLE			},
 	
 	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_AKIMBOPISTOL	},
 	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_MAGNUM			},
@@ -834,6 +866,7 @@ struct draw_info WeaponDrawInfo[MAXSHOPWEAPONS] = {
 	
 	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_HMG			},
 	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_LEAD			},
+	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_USESCROLL,								SHOP_WEP_DSEAL			},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH,								SHOP_WEP_RESMG1			},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH,								SHOP_WEP_RESMG2			},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_RESMG3			},
@@ -859,7 +892,7 @@ struct draw_info WeaponDrawInfo[MAXSHOPWEAPONS] = {
 	
 	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_BFG			},
 	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_DEVA			},
-	{ OBJ_WEP | OBJ_HASCHOICE,												SHOP_WEP_MFG			},
+	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_USESCROLL,								SHOP_WEP_MFG			},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH,								SHOP_WEP_RESBFG1		},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_RESBFG2		},
 	{ OBJ_WEP | OBJ_HASCHOICE | OBJ_RESEARCH | OBJ_USESCROLL,				SHOP_WEP_GAUSS			},
@@ -911,7 +944,10 @@ str AccessoryNames[MAX_ACCESSORY] = {
 	"Scroll of Agamotto",
 	"Gryphon Boots",
 	"Lich Arm",
-	"Sigil of Elements"
+	"Sigil of Elements",
+	"Celestial Relic",
+	"Veil of the Assassin",
+	"Hunter's Talisman"
 };
 
 str AccessoryList[MAX_ACCESSORY] = {
@@ -929,6 +965,9 @@ str AccessoryList[MAX_ACCESSORY] = {
 	"Accessory_12",
 	"Accessory_13",
 	"Accessory_14",
+	"Accessory_15",
+	"Accessory_16",
+	"Accessory_17"
 };
 
 // make this automated later
@@ -946,7 +985,10 @@ str AccessoryImages[MAX_ACCESSORY] = {
 	"AC11B0",
 	"AC12B0",
 	"AC13B0",
-	"AC14B0"
+	"AC14B0",
+	"AC15B0",
+	"AC16B0",
+	"AC17B0"
 };
 
 str AccessoryBenefits[MAX_ACCESSORY] = {
@@ -961,9 +1003,12 @@ str AccessoryBenefits[MAX_ACCESSORY] = {
 	"Reflect damage back to enemies. Attackers take x2 more damage for 5 seconds.",
 	"Your weapons do not require any ammo. Does not affect \cstemporary\c- weapons.",
 	"Do 150% more damage while standing.",
-	"Gives 25% movement speed, immunity to curses and fall damage.",
+	"Gives 25% movement speed, immunity to curses and fall damage, and knockback immunity.",
 	"Soul capacity becomes 150 and ultimate weapons do x2.5 damage.",
-	"Gives x2 elemental damage to a single element for 15 seconds. This works in a rotation."
+	"Gives x2 elemental damage to a single element for 15 seconds. This works in a rotation.",
+	"Gives 25% increased health and armor capacity.",
+	"Your critical hits mark nearby monsters once every 20 seconds, making them deal 33% less damage they replenish 3% of your max health on kill.",
+	"On a critical hit, your next crit's damage is doubled. Expending this crit heals you for 10% of missing health. Lasts for 5 seconds or until you expend the crit."
 };
 
 str AccessoryNegatives[MAX_ACCESSORY] = {
@@ -980,7 +1025,10 @@ str AccessoryNegatives[MAX_ACCESSORY] = {
 	"Take 30% more damage while moving.",
 	"Can't regenerate.",
 	"Any other weapon does 90% reduced damage.",
-	"Other elements do 50% less damage."
+	"Other elements do 50% less damage.",
+	"Slows you down by 25%.",
+	"Your overall crit damage is halved.",
+	"On expending your doubled crit, never crit for 10 seconds."
 };
 
 struct draw_info AmmoDrawInfo[MAXSHOPAMMOS] = {
@@ -988,7 +1036,6 @@ struct draw_info AmmoDrawInfo[MAXSHOPAMMOS] = {
 	{ OBJ_AMMO,													SHOP_AMMO_SHELL				},
 	{ OBJ_AMMO,													SHOP_AMMO_ROCKET			},
 	{ OBJ_AMMO,													SHOP_AMMO_CELL				},
-	
 	{ OBJ_AMMO | OBJ_RESEARCH,									SHOP_AMMO_EXPSHELL			},
 	{ OBJ_AMMO | OBJ_RESEARCH,									SHOP_AMMO_EBONY				},
 	{ OBJ_AMMO | OBJ_RESEARCH,									SHOP_AMMO_EBONYX			},
@@ -1012,6 +1059,7 @@ struct draw_info AmmoDrawInfo[MAXSHOPAMMOS] = {
 	{ OBJ_AMMO,													SHOP_AMMO_EVERICE			},
 	{ OBJ_AMMO | OBJ_RESEARCH,									SHOP_AMMO_VIPER				},
 	{ OBJ_AMMO | OBJ_RESEARCH,									SHOP_AMMO_THUNDER			},
+	{ OBJ_AMMO,													SHOP_AMMO_DSEAL				},
 	
 	// special ammos
 	{ OBJ_AMMO | OBJ_RESEARCH,									SHOP_AMMO_FLECHETTE			},
@@ -1049,7 +1097,9 @@ int AmmoCounts[MAXSHOPAMMOS] = {
     18,
 	16,
 	25,
+	4,
 	10,
+	25,
 	
 	8,
 	8,
@@ -1085,8 +1135,10 @@ str AmmoExplanation[MAXSHOPAMMOS] = {
 	"nitrogen canisters for the Nitrogen Crossbow.",
 	"ion cells for the Ion Cannon.",
 	"acid clips for the Acid Rifle.",
-	"ever ice for the Frost Fang.",
+	"ever ice for the Frost Fang and Freezer Cannon.",
+	"viper essence for the Viper Staff.",
 	"thunder mana for the Thunder Staff.",
+	"dark seals for the Demon Sealer.",
 	
 	"flechette shells.",
 	"magnum shells.",
@@ -1121,18 +1173,19 @@ str ArmorExplanation[MAXARMORS] = {
 	"41.6% protection, 150 armor.",
 	"50% protection, 200 armor.",
 	"75% protection, 300 armor.",
-	"25% protection, 150 armor. Extra 50% hitscan damage, 75% hitscan protection.",
-	"25% protection, 150 armor. Extra 50% magic damage, 75% magic protection.",
-	"25% protection, 150 armor. Extra 50% explosives damage, 75% explosive protection.",
-	"25% protection, 150 armor. Extra 50% energy damage, 75% energy protection.",
-    "25% protection, 150 armor. Extra 50% elemental damage, 75% elemental protection.",
+	
+	"33% protection, 200 armor. Extra 50% hitscan damage, 75% hitscan protection.",
+	"33% protection, 200 armor. Extra 50% magic damage, 75% magic protection.",
+	"33% protection, 200 armor. Extra 50% explosives damage, 75% explosive protection.",
+	"33% protection, 200 armor. Extra 50% energy damage, 75% energy protection.",
+    "33% protection, 200 armor. Extra 50% elemental damage, 75% elemental protection.",
     
     "100% protection, 400 armor.",
-	"45% protection, 200 armor. If not damaged for 3 seconds, restores armor slowly.",
+	"45% protection, 300 armor. If not damaged for 3 seconds, restores armor slowly.",
 	"33% protection, 150 armor. Extra 100% hitscan resist.",
-	"45% protection, 200 armor. 33% chance on hit to release spikes. Melee talent and bulkiness increase the damage.",
-	"35% protection, 250 armor. 50% reduced damage from melee attacks. If a melee weapon is held extra 40% protection is bestowed.",
-	"25% protection, 150 armor. On a kill spree, gain 50% extra damage. If a killing spree is met restore armor completely.",
+	"60% protection, 400 armor. 33% chance on hit to release spikes. Melee talent and bulkiness increase the damage.",
+	"35% protection, 400 armor. 50% reduced damage from melee attacks. If a melee weapon is held extra 40% protection is bestowed.",
+	"33% protection, 250 armor. On a kill spree, gain x2 extra damage and 25% damage reduction. If a killing spree is met restore armor completely.",
 };
 
 struct draw_info ArmorDrawInfo[MAXARMORS] = {
@@ -1155,27 +1208,28 @@ struct draw_info ArmorDrawInfo[MAXARMORS] = {
 };
 						 
 str WeaponExplanation[SHOP_WEP_REAVER + 1] = {
-	"Double the blade, double the fun! Twice as much damage, same firing rate.",
-	"Sickle steals life from enemies on hit. Does 35 - 50 damage 3 times. Alt fire swings for irreducable 60 - 80 damage 3 times. Altfire requires Close Combat Mastery.",
-	"Does 80 - 120 damage per swing. Alt fire charges and releases 17 baseballs each doing 50 - 150 on impact and 64 damage in a 96 unit radius. Alt fire requires Close Combat Mastery.",
-	"Does 100 - 400 damage per hit depending on charge . Alt fire makes you shoot a wave doing 24 damage in a 104 unit radius, run 15% faster but can't change weapons. Alt fire requires Close Combat Mastery.",
-	"60 - 240 damage per swing with 48 - 192 additional damage in a 96 unit radius. Alt fire shoots 5 flames doing 40 - 80 on hit and 192 - 240 damage in a 160 unit radius. Alt fire requires Close Combat Mastery. Can't hit \cughosts.",
+	"Double the blade, double the fun! Twice as much damage, same firing rate. Forces pain.",
+	"Does 80 - 120 damage per swing. Melee does triple damage against undead or magical enemies. Alt fire charges and releases 17 baseballs each doing 100 - 150 on impact and 128 damage in a 128 unit radius. Alt fire requires Melee Expertise ability.",
+	"Unsheathing does 140 damage, normal firing does 84. Altfire allows swinging combos to do massive damage. Normal swings block projectiles. Altfire requires Melee Expertise ability.",
+	"60 - 240 damage per swing with 48 - 192 additional damage in a 96 unit radius. Alt fire shoots 5 flames doing 40 - 80 on hit and 192 - 240 damage in a 160 unit radius. Alt fire requires Melee Expertise ability. Can't hit \cughosts.",
+	"Does 100 - 400 damage per hit depending on charge . Alt fire makes you shoot a wave doing 24 damage in a 104 unit radius, run 15% faster but can't change weapons. Alt fire requires Melee Expertise ability.",
+	"Sickle steals life from enemies on hit. Does 40 - 60 damage 3 times. Alt fire swings for irreducable 75 - 90 damage 3 times. Altfire requires Melee Expertise ability.",
 	
 	"Akimbo longslides. Does 35 damage per shot in a 1.25 by 0.5 spread.",
-	"Magnum is a true classic. Each bullet does 170 - 230 damage. Has a capacity of 6. Alt fire reloads. \cfIgnores shields.",
+	"Magnum is a true classic. Each bullet does 150 - 225 damage. Has a capacity of 6. Alt fire reloads. \cfIgnores shields.",
 	"Laser Pistol is the fresh invention of UAC. Shoots lasers doing 15 - 30 damage in a 2.0 by 1.25 spread. Alt fire charges to do up to a x5 damage rail. Doesn't use ammo. \cfIgnores shields.",
 	"Assault Rifle does 25 damage per bullet in a 3.6 by 2.4 spread. Magazine capacity of 31. Alt fire zooms, allowing more precise shots.",
-	"Summons mobile viper traps, jumping on enemies doing 60-100 damage in 128 unit radius. They expire after 10 seconds. Alt fire shoots slithering vipers doing 90-150 damage, \cfignoring shields\c- but can't hit \cughosts.",
+	"Summons mobile viper traps, jumping on enemies doing 120-200 damage in 128 unit radius. They expire after 12 seconds. Alt fire shoots slithering vipers doing 150-250 damage, \cfignoring shields\c-.",
 	"Casts 3 flames doing 10-40 damage each. Alt fire casts a flame circle at most 384 units away doing 25 initial damage and creating 8 flames doing 32-64 damage on hit and 24 radius damage in 24 units. Can't hit \cughosts.",
-	"Scatter Pistol shoots 3 pellets each doing 8 - 16 damage. Pellets scatter to 5 tiny pellets doing 2- 8 damage. Alt fire shoots one pellet. \cfIgnores shields.\c- Irreducable.",
+	"Scatter Pistol shoots 3 pellets each doing 10 - 20 damage. Pellets scatter to 6 tiny pellets doing 6 - 12 damage. Alt fire shoots one pellet. \cfIgnores shields.\c- Irreducable.",
 	
 	"Purifier shoots 15 pellets each doing 15 damage in a 3.6 by 3.6 and a shell capacity of 8. Can use \cialternate\c- ammo.",
-	"Killstorm is an automatic shotgun, shooting 12 pellets each doing 15 damage in a 7.2 by 5.2 spread. Has a shell capacity of 10.",
-	"Deadlocks fires 16 pellets doing 15 damage in a 7.0 by 5.2 spread. Has a shell capacity of 12. Can use \cialternate\c- ammo.",
+	"Killstorm is an automatic shotgun, shooting 12 pellets each doing 18 damage in a 7.2 by 5.2 spread. Has a shell capacity of 10.",
+	"Deadlock fires 16 pellets doing 15 damage in a 7.0 by 5.2 spread. Has a shell capacity of 12. Can use \cialternate\c- ammo.",
 	"Fires shots that do 210 ice damage. Alt fire shoots a blast of nitrogen 384 units ahead, creating 4 series of gas streams doing 5 damage.",
-	"Heavy Super Shotgun shoots 24 pellets doing 15 damage in a 9.6 by 5.8 spread. 8 of these rip through targets.",
+	"Heavy Super Shotgun shoots 28 pellets doing 15 damage in a 9.6 by 5.8 spread. Half of these rip through targets.",
 	"Erasus shotgun shoots highly ballistic shells with 18 pellets each doing 15 damage. Has to reload after shooting twice. Alt fire shoots both shells in the chamber, or reloads.",
-	"Fires 24 plasma balls in a circular fashion, each doing 20 damage. Does irreducable damage. Has a clip size of 5.",
+	"Fires 24 plasma balls in a circular fashion, each doing 20 damage. Has a clip size of 5.",
 	"Shoots 18 shells each doing 15 damage and forcing pain. Overheats when used. Altfire releases a portion of it, dealing 108-180 damage in 96 unit radius. \cfIgnores shields.",
 	
 	"Silver Gun fires 9 pellets each doing 15 on hit. Each pellet also does 32 - 48 explosion damage in a small area. Does self damage. \cfIgnores shields.",
@@ -1183,20 +1237,21 @@ str WeaponExplanation[SHOP_WEP_REAVER + 1] = {
 	
 	"Finest machine guns UAC has to offer. Bullets do 25 damage in a 1.6 by 0.8 spread. Has a clip size of 60. Can zoom.",
 	"Lead Spitter is a super sonic bullet shooter shooting 2 bullets doing 18 damage in a 6.4 by 4.8 spread. Clip size is 75. \cfIgnores shields.",
+	"Japanese technology brings the finest demon hunting tool. Shoots magic cards that deal 15 damage, reduce monster damage and resistance by 50%. If the monster is below 10% health, culls the monster.",
 	"Templar fires silver bullets doing 20 damage in a 4.4 by 2.8 spread. Bullets deal x3 damage to undead and magical enemies. Clip size of 40. Can use \cigrenades\c-.",
 	"Fires 7 pellets doing 12 damage in a 3.6 by 3.6 spread. Alt fire makes it full auto, but twice as inaccurate. Can use \cialternate\c- ammo. Reload when full to use other ammo.",
 	"Fires bullets doing 15 damage on hit and 5-15 damage in a 40 unit radius. Alt fire shoots a bolt that sticks to enemies, detonating after 3 seconds for 64 damage and release toxic cloud doing 5-15 damage in 96 unit radius.",
 	"Stronger, faster and better than ever! Poor accuracy, shoots tracers that do 16 - 28 damage each. Alt fire to spin. Can't hit \cughosts.",
 	"The ebony cannon shoots bouncing balls of death. 16 - 40 damage with 48 explosion damage in 64 units. Alt fire shoots scatter bombs. \cfIgnores shields.",
 	
-	"The Torpedo Launcher shoots fast torpedos each doing 180 - 220 damage on impact and 224 damage in a 128 unit radius. Can't hit \cughosts",
+	"The Torpedo Launcher shoots fast torpedos each doing 300 - 500 damage on impact and 224 damage in a 128 unit radius. Can't hit \cughosts",
 	"Mercury Launcher fires accelerating and heat seeking mercury missiles doing 256 - 320 damage on hit and 192 damage in a 160 unit radius over 2 seconds. Can't hit \cughosts.",
 	"Fires a meteor doing 200 on impact and 192 in a 192 unit radius. The meteor then splits into smaller pieces, and those pieces as well. Main meteor \cfignores shields\c-.",
 	"Fires grenades doing 128 on impact and 128 in a 128 unit radius. The grenade explodes into shrapnels ripping through doing 6-18 damage. Altfire loads more grenades in the chamber. Can't hit \cughosts.",
 	"Launches a ball of ice that does 150 damage on impact. After some time it'll stop and explode doing 150 damage in 176 unit radius, releasing many ice particles around each doing 3-9 damage, ripping through enemies. They also explode and do 36 damage in 64 unit radius. Can \cgoverheat\c-.",
 	"Useful for when you can't reach around corners. Does 80 damage on impact and 128 damage in a 144 unit radius. Can't hit \cughosts. \c-Can use \cialternate\c- ammo.",
-	"The Rotary Grenade Launcher does 192 damage on impact and 192 damage on a 192 unit radius. Can't hit \cughosts",
-	"Top of the food chain for rockets. Shoots two homing rockets each doing 160 damage both on impact and explosion. Can't hit \cughosts.",
+	"The Rotary Grenade Launcher does 384 damage on impact and 192 damage on a 192 unit radius. Can't hit \cughosts",
+	"Top of the food chain for rockets. Shoots two homing rockets each doing 192 damage both on impact and explosion. Can't hit \cughosts.",
 	
 	"Improved with a nuclear reactor. Does 36 - 60 on hit and 10 - 30 explosion damage in a 48 unit radius. Can \cgoverheat\c-. Does self damage.",
 	"Turel Cannon fires highly ionized particles doing 125 damage ripping through everything. Continuous fire is less accurate and does 80 damage. Has a range of 768 units.",
@@ -1208,9 +1263,9 @@ str WeaponExplanation[SHOP_WEP_REAVER + 1] = {
 	
 	"The newest BFG model 32768 devastates with 600 - 900 damage on impact and 384 damage in a 160 unit radius. Shoots 64 tracers. \cfIgnores shields.",
 	"Devastator launches four mini rockets each doing 32 to 80 with 32 radius damage in 72 units. Can't hit \cughosts.\c- \cfIgnores shields.",
-	"Fires a destructive orb doing 600 damage on impact and 384 damage in a 768 unit radius. Creates 6 smaller explosions doing 384 damage in a 256 unit radius. \cfIgnores shields.",
+	"Fires a destructive orb doing 425 damage on impact and 384 damage in a 768 unit radius. Creates 6 smaller explosions doing 200 damage in a 256 unit radius. Does self damage. \cfIgnores shields.\c- Does full damage regardless.",
 	"Fires ionized energy doing 125 impact and 128 area damage in 160 unit radius. Can \cgoverheat\c-. \cfIngores shields\c-. Can't hit \cughosts\c-.",
-	"Launches a ball of lightning that zaps 5 nearest enemies for 100 damage in 512 units. On impact deals 250-500 and 250 radius damage in 96 units. Altfire zaps all enemies in a large radius, \cfignoring shields.",
+	"Launches a ball of lightning that zaps 5 nearest enemies for 115 damage in 420 units. On impact deals 250-500 and 250 radius damage in 96 units. Altfire zaps all enemies in a large radius, \cfignoring shields. Does self damage.",
 	"Gauss Rifle fires a magnetic pulse dealing 100 on hit and 192 radius damage in a 96 unit radius. Alt fire zooms, amplifying the damage for each zoom. Can't hit \cughosts.\c- \cfIgnores shields.",
 	"This baby can rip through concrete with ease. Each shot does multiples of 92 damage. Alt fire charges up the next shot, up to 2 times. \cfIgnores shields.",
 	
@@ -1222,7 +1277,7 @@ str WeaponExplanation[SHOP_WEP_REAVER + 1] = {
 
 // +1 because dash toggle is an exception
 str AbilityHelpText[MAXABILITIES + 1] = {
-	"Mele weapons gain altfires.",
+	"Melee weapons gain altfires.",
 	"You reload twice as fast.",
 	"Gain dodge moves (tap the move keys to dash).",
 	"Artifact power increases by 50%.",
@@ -1255,7 +1310,8 @@ str ShopWeaponTake[SHOP_WEP_REAVER + 1] = {
 	" Chainsaw ",
 	" Chainsaw ",
 	" Chainsaw ",
-	" Chainsaw ",
+	" ",
+	" ",
 	
 	" Pistol ",
 	" Pistol ",
@@ -1278,6 +1334,7 @@ str ShopWeaponTake[SHOP_WEP_REAVER + 1] = {
 	" ",
 	" ",
 	
+	" Machine Gun ",
 	" Machine Gun ",
 	" Machine Gun ",
 	" Machine Gun ",
@@ -1315,16 +1372,6 @@ str ShopWeaponTake[SHOP_WEP_REAVER + 1] = {
 	" ",
 	" ",
 	" "
-};
-						 
-str TalentHelpCornerMessage[MAX_TALENTS] = {
-	"Adds more\ndamage to\nBullet\nWeapons",
-	"Adds more\ndamage to\nShell\nWeapons",
-	"Adds more\ndamage to\nMelee\nWeapons",
-	"Adds more\ndamage to\nOccult\nWeapons",
-	"Adds more\ndamage to\nExplosive\nWeapons",
-	"Adds more\ndamage to\nEnergy\nWeapons",
-    "Adds more\ndamage to\nElemental\nWeapons"
 };
 
 int ResearchEntryNumbers[MAX_RESEARCHES] = {
@@ -1604,6 +1651,18 @@ str HelpText_Research[MAX_HELPTEXT_RESEARCH] = {
 	"Once you obtain the required amount of \cvbudget\c-, you can go ahead and finish your research. When the research is concluded, you can use the feature the research enables."
 };
 
+#define MAX_HELPTEXT_CHARACTER 8
+str HelpText_Character[MAX_HELPTEXT_CHARACTER] = {
+	"Character loading is a feature only available in servers with \cvSoftcore\c- or \cgHardcore\c- modes enabled. You can do this using \c[Y5]\"sethardcore\"\c- or \c[Y5]\"setsoftcore\"\c- command or setting appropriate flags.",
+	"There are numerous flags that require to be set in order for the above modes to work properly. A full list of them can be found on our discord at: https://discord.gg/Gffvznu",
+	"You can skip the loading phase using \cf\"skipload\"\c- command in case you are starting a fresh character, or simply don't want to load.",
+	"You should in general use the \cf\"setchar X\"\c- command to set your character slot if you are starting fresh.",
+	"Avoid slot 1 as it's the default one, it can cause overwrites. Try to prefer slots 2 to 4 as much as possible.",
+	"You can have a maximum of 4 characters total from slots 1 to 4. However, your selected character will be wiped out on death should you die in \cgHardcore\c- mode, so caution is advised!",
+	"You'll be given a set amount of time before the game starts so that you can load your character safely. There are no monsters during this period.",
+	"Loading procedure is as follows:\n1. Open Console\n2.Login using \"login username password\".\n3. Type \cf\"loadme X\"\c- where 'X' is your character slot number.\n3. Wait for others to load."
+};
+
 #define MAX_HELPTEXT_DAMAGETYPES MAX_DAMAGE_TYPES
 str HelpText_DamageTypes[MAX_HELPTEXT_DAMAGETYPES] = {
 	"\c[Y5]Bullet\n\nThe simplest of all types. You'll find this in many semi-auto or fully automatic weapons. Counts as \cuphysical\c- damage.",
@@ -1671,6 +1730,83 @@ str LegendaryMonsterIcons[MAX_LEGMONS_TEXT] = {
 	"LEG_TORR",
 	"LEG_MORD",
 	"LEG_GODS"
+};
+
+#define MAX_MONSTER_MODS 35
+str Help_EliteModLabel[MAX_MONSTER_MODS] = {
+	"Explosive Resist",
+	"High Explosive Resist",
+	"Explosive Immune",
+	"Physical Resist",
+	"Ghost",
+	"Hardened Skin",
+	"Reflective",
+	"Summon Minion",
+	"Can Curse",
+	"Can Heal",
+	"Can Block",
+	"Can Split",
+	"Can Raise",
+	"Can Teleport",
+	"Resurrect Fallen",
+	"Mobility",
+	"Homing",
+	"Poisonous",
+	"Death Surprise",
+	"Rage",
+	"Pierces Armor",
+	"Aggressive",
+	"Extra Fast",
+	"Fast Reaction",
+	"No Pain",
+	"Physical Immune",
+	"Energy Resist",
+	"Energy Immune",
+	"Magic Resist",
+	"Magic Immune",
+	"Elemental Resist",
+	"Elemental Immune",
+	"Extra Strong",
+	"Vital",
+	"Armor Penetration"
+};
+
+str Help_EliteModExplanation[MAX_MONSTER_MODS] = {
+	"Monster takes 50% reduced damage from explosives.",
+	"Monster is immune to area damage.",
+	"Monster is immune to explosives.",
+	"Monster takes 50% reduced damage from physical melee attacks and 25% reduced damage from ballistic attacks.",
+	"Monster is ghostly, most of the non-magical projectiles will go through the monster.",
+	"Monster is impervious to ripping attacks.",
+	"Monster reflects certain projectiles on hit.",
+	"Monster can summon minions.",
+	"Monster can curse the player.",
+	"Monster can heal nearby monsters.",
+	"Monster has means to block attacks from players. Weapons that \cfignore shields\c- are effective.",
+	"Monster can split into other monsters.",
+	"Monster has a chance to raise from the dead.",
+	"Monster has means to teleport around.",
+	"Monster can resurrect other dead monsters.",
+	"Monster is capable of covering distances fast.",
+	"Monster has homing attacks.",
+	"Monster poisons player with certain attacks.",
+	"Monster has a death activated ability.",
+	"Monster can enter rage mode under certain conditions.",
+	"Monster has attacks that ignores armor.",
+	"Monster is extra aggressive.",
+	"Monster is twice as fast.",
+	"Monster reacts to whoever hits it immediately.",
+	"Monster feels no pain.",
+	"Monster is immune to any kind of ballistic attack.",
+	"Monster takes 50% reduced damage from energy attacks.",
+	"Monster is immune to energy attacks.",
+	"Monster takes 50% reduced damage from magical attacks.",
+	"Monster is immune to magical attacks.",
+	"Monster takes 50% reduced damage from elemental attacks.",
+	"Monster is immune to elemental attacks.",
+	"Monster deals twice as much damage.",
+	"Monster has twice as much health.",
+	"Monster ignores armor of player with every attack."
 };
 
 #endif

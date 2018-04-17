@@ -109,12 +109,12 @@ Script 700 ENTER CLIENTSIDE {
 		if(StrCmp(" ", ammo)) { // if uses ammo
 			acomp = GetAmmoCapacity(ammo);
 			curammo = CheckInventory(ammo);
-			if(curammo > acomp / 2) {
+			if(curammo >= acomp / 2) {
 				GiveInventory("H_PrimaryGreen", 1);
 				TakeInventory("H_PrimaryYellow", 1);
 				TakeInventory("H_PrimaryRed", 1);
 			}
-			else if(curammo > acomp / 4) {
+			else if(curammo >= acomp / 4) {
 				TakeInventory("H_PrimaryGreen", 1);
 				GiveInventory("H_PrimaryYellow", 1);
 				TakeInventory("H_PrimaryRed", 1);	
@@ -130,12 +130,12 @@ Script 700 ENTER CLIENTSIDE {
 		if(StrCmp(" ", ammoalt) && StrCmp(ammoalt, ammo)) { // if uses altammo and is not same as normal ammo
 			acomp = GetAmmoCapacity(ammoalt);
 			curammo = CheckInventory(ammoalt);
-			if(curammo > acomp / 2) {
+			if(curammo >= acomp / 2) {
 				GiveInventory("H_SecondaryGreen", 1);
 				TakeInventory("H_SecondaryYellow", 1);
 				TakeInventory("H_SecondaryRed", 1);
 			}
-			else if(curammo > acomp / 4) {
+			else if(curammo >= acomp / 4) {
 				TakeInventory("H_SecondaryGreen", 1);
 				GiveInventory("H_SecondaryYellow", 1);
 				TakeInventory("H_SecondaryRed", 1);	
@@ -173,9 +173,10 @@ Script 702 OPEN {
 	PickQuest();
 }
 
-Script "DND Check Hardcore" OPEN {
+Script "DND Check Hardcore Softcore" OPEN {
 	while(1) {
-		if(GetCVar("dnd_hardcore"))
+		// check only if one is on, not both
+		if((GetCVar("dnd_hardcore") ^ GetCVar("dnd_softcore")) && GameType() != GAME_SINGLE_PLAYER)
 			HardcoreSet = CheckHardcoreSettings();
 		Delay(105);
 	}
@@ -187,6 +188,7 @@ Script 703 DEATH {
 	SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
 	TakeInventory("P_Frozen", 1);
 	StatListOpened[PlayerNumber()] = 0;
+	GiveInventory("DnD_PDead", 1);
 	SetInventory("ShowingMenu", 0);
 	SetInventory("MenuOption", 5);
 	SetInventory("MenuPosX", 0);
@@ -197,6 +199,8 @@ Script 703 DEATH {
 	TakeInventory("DnD_SellConfirm", 1);
 	//SetInventory("MenuPosY", 5);
 	ACS_NamedExecuteAlways("DND Menu Cleanup", 0);
+	
+	PlayerDied[PlayerNumber()] = 1;
 	
 	if(GetCVar("Survival")) {
 		if(CheckInventory("CurrentLives"))
@@ -213,54 +217,75 @@ Script 703 DEATH {
 	SomeoneDied = 1;
 }
 
+Script "DnD Portable Kit Script" (void) {
+	int healthcap = GetSpawnHealth();
+	int bonus = GetHealingBonuses();
+	int amt = healthcap / 100;
+	amt = amt * (100 + bonus) / 100;
+	while(GetActorProperty(0, APROP_HEALTH) < healthcap && CheckInventory("StoredMedkit")) {
+		TakeInventory("StoredMedkit", 1);
+		GiveInventory("HealthBonusX", amt);
+		GiveInventory("DnD_MasterHealerQuest_HealAmount", amt);
+	}
+}
+
 // Health Kits Script (Used by Portable Medikits as well, ported here)
-Script 818 (int amt, int isspecial) {
-	int hp = GetActorProperty(0, APROP_HEALTH);
-	int stat = GetSpawnHealth();
-	int bonus = PERK_MEDICBONUS * CheckInventory("Perk_Medic");
-	if(CheckInventory("DnD_QuestReward_HealingIncrease25"))
-		bonus += amt * DND_QUEST_MASTERHEALER_INCREASE / 100;
-	if(CheckInventory("DnD_QuestReward_HealingAndCapIncrease"))
-		bonus += amt * DND_QUEST_SKINOTEETH_INCREASE / 100;
-	int toGive;
+Script "DnD Health Pickup" (int amt, int isspecial) {
+	int curhp = GetActorProperty(0, APROP_HEALTH);
+	int healthcap = GetSpawnHealth();
+	int bonus = GetHealingBonuses();
+	// holds the old amt
+	int toGive = amt, base = amt;
+	// the percentage of spawn health is amt to be given
+	amt = healthcap * amt / 100;
+	// consider healing bonuses from quests
+	amt = amt * (100 + bonus) / 100;
+	
+	// health bonus
+	if(isspecial == 5) {
+		GiveInventory("HealthBonusX", amt);
+	}
 	if(isspecial == 4) {
-		if(GetActorProperty(0, APROP_HEALTH) < GetSpawnHealth())
-			SetActorProperty(0, APROP_HEALTH, GetSpawnHealth());
+		if(GetActorProperty(0, APROP_HEALTH) < healthcap)
+			SetActorProperty(0, APROP_HEALTH, healthcap);
 		Terminate;
 	}
 	if(isspecial == 3) {
-	    GiveInventory("HealthBonusX", stat - hp);
+	    GiveInventory("HealthBonusX", healthcap - curhp);
 	    Terminate;
 	}
-	else if(isspecial == 2) // ubersphere / megasphere
-	    toGive = amt - DND_BASE_HEALTH + stat - hp;
+	else if(isspecial == 2) { // ubersphere / megasphere
+		toGive /= 100; // get the multiplier for mega / uber
+		toGive = healthcap * toGive - curhp;
+	}
 	else if(isspecial == 1)
-		toGive = amt + stat - hp;
+		toGive = amt + healthcap - curhp;
 	else // for anything else (stims, medkits etc)
-	    toGive = stat - hp;
+	    toGive = healthcap - curhp;
 	
-	if(toGive > amt + bonus)
-		toGive = amt + bonus;
+	if(toGive > amt)
+		toGive = amt;
 	
 	if(CheckResearchStatus(RES_MEDKITSTORE) == RES_DONE && !isspecial) {
-		if(hp < stat) { // if my current hp is less than max
+		if(curhp < healthcap) { // if my current curhp is less than max
 			GiveInventory("HealthBonusX", toGive);
 			GiveInventory("DnD_MasterHealerQuest_HealAmount", toGive);
 		}
-        if(toGive < amt + bonus)
-            GiveInventory("StoredMedkit", amt + bonus - Clamp_Between(toGive, 0, amt + bonus));
+        if(toGive < amt)
+            GiveInventory("StoredMedkit", Clamp_Between(amt - toGive, 1, base));
 	}
 	else {
 		GiveInventory("HealthBonusX", toGive);
 		GiveInventory("DnD_MasterHealerQuest_HealAmount", toGive);
 	}
-	if(active_quest_id == QUEST_HEALFOR500 && !IsQuestComplete(ActivatorTID(), active_quest_id) && CheckInventory("DnD_MasterHealerQuest_HealAmount") >= DND_QUEST_MASTERHEALER_REQ) {
+	
+	// Quest records
+	if(active_quest_id == QUEST_HEALFOR500 && !IsQuestComplete(ActivatorTID(), active_quest_id) && CheckInventory("DnD_MasterHealerQuest_HealAmount") >= DND_QUEST_MASTERHEALER_REQ)
 		CompleteQuest(ActivatorTID(), active_quest_id);
-		ACS_NamedExecuteAlways("DND Quest Complete", 0);
-	}
+	
 	// Skin O' My Teeth check
 	if(active_quest_id == QUEST_NOHEALINGPICKUP)
-		FailQuest(active_quest_id);
+		FailQuest(ActivatorTID(), active_quest_id);
 }
 
 Script 819 (int type) {
@@ -308,7 +333,7 @@ Script 826 (int opt) {
     SetResultValue(CheckInventory("FadeIntensity"));
 }
 
-Script 827 (int spree, int mult, int reward) CLIENTSIDE {
+Script "DND Killing Spree End" (int spree, int mult, int reward) CLIENTSIDE {
 	LocalAmbientsound("KillStreak/Show", 127);
 	SetHudSize(480, 360, 0);
 	str temp = "KILLST";
@@ -331,7 +356,7 @@ Script 828 (void) {
 	TakeInventory("DnD_SpreeCountdownRunning", 1);
 }
 
-Script 829 (int mode) {
+Script "DND Killing Spree" (int mode) {
 	if(mode) { // kill streaks
 		// if a kill streak wasn't running, run it now
 		if(!CheckInventory("DnD_SpreeCountdownRunning")) {
@@ -341,8 +366,10 @@ Script 829 (int mode) {
 		// spree count was given, so a possible spree may be in reach
 		if(CheckInventory("DnD_SpreeTimer")) {
 			GiveInventory("DnD_MultikillCounter", 1);
-			if(GetArmorType("RavagerArmor", PlayerNumber()))
+			if(GetArmorType("RavagerArmor", PlayerNumber())) {
 				GiveInventory("RavagerPower", 1);
+				GiveInventory("RavagerPowerDefense", 1);
+			}
 		}
 		// give spree counter
 		GiveInventory("DnD_SpreeTimer", DND_SPREE_AMOUNT);
@@ -351,20 +378,22 @@ Script 829 (int mode) {
 			while(CheckInventory("DnD_SpreeTimer"))
 				Delay(1);
 			if(CheckInventory("DnD_MultikillCounter") >= DND_SPREE_TRIGGER && isAlive()) {
-				int spree = CheckInventory("DnD_MultiKillCounter") + 1, mult, reward, temp;
+				int spree = CheckInventory("DnD_MultiKillCounter") + 1, mult = 0, reward = 0, temp;
 				SetInventory("DnD_MultiKillCounter", 0);
 				// shows kill spree result on hud
 				// for every 10 enemy killed in spree, add a 0.25 multiplier
 				// base multiplication factor is 0.25
-				mult = spree / DND_SPREE_PER; // how many .25 to add
+				mult = Clamp_Between(spree / DND_SPREE_PER, 1, MAX_SPREE_TEXT); // how many .25 to add
 				temp = CheckInventory("SpreeXP") / DND_SPREE_BASE;
 				while(mult) {
-					reward += temp;
+					// no overflow
+					if(reward < INT_MAX - temp)
+						reward += temp;
 					--mult;
 				}
 				if(CheckInventory("DnD_QuestReward_KillingSpree15"))
 					reward += reward * DND_QUEST_BERSERK_SPREEBONUS / 100;
-				ACS_ExecuteAlways(827, 0, spree, spree / DND_SPREE_PER, reward);
+				ACS_NamedExecuteAlways("DND Killing Spree End", 0, spree, spree / DND_SPREE_PER, reward);
 				GiveInventory("Exp", reward);
 				GiveInventory("ExpVisual", reward);
 				GiveInventory("LevelExp", reward);
@@ -373,8 +402,8 @@ Script 829 (int mode) {
 				// ravager armor add
 				int armor = GetArmorType("RavagerArmor", PlayerNumber());
 				if(armor) {
-					if(armor < DND_RAVAGERARMOR_AMOUNT) {
-						GiveInventory("NewArmorBonus", DND_RAVAGERARMOR_AMOUNT - armor);
+					if(armor < GetArmorSpecificCap(DND_RAVAGERARMOR_AMOUNT)) {
+						GiveInventory("NewArmorBonus", GetArmorSpecificCap(DND_RAVAGERARMOR_AMOUNT) - armor);
 						GiveInventory("RavagerEffect", 1);
 						LocalAmbientSound("items/armorbonus", 127);
 					}
@@ -409,19 +438,24 @@ Script "DND On Kill" KILL {
     // decide how exp/credit base is calculated
 	int exptemp = CheckInventory("MonsterMaxHealth") / DND_HEALTHEXPSCALE;
 	int credtemp = (DND_HEALTHCREDITUPSCALE * CheckInventory("MonsterMaxHealth")) / DND_HEALTHCREDITSCALE;
-    
+    int pnum = 0, i = CheckInventory("MonsterLevel");
+	
+	if(i > 75)
+		credtemp /= DND_HEALTHCREDITAFTER75SCALE;
+	else if(i > 50)
+		credtemp /= DND_HEALTHCREDITAFTER50SCALE;
+	
 	if(CheckInventory("MonsterIsElite")) {
 		exptemp += exptemp * DND_ELITE_EXP_BONUS / 100;
 		credtemp += credtemp * DND_ELITE_CREDIT_BONUS / 100;
 	}
 	
-	int pnum = 0, i;
+	
 	int pcount = Clamp_Between(PlayerCount(), 1, DND_MAX_SHARE);
 	int expscale = Clamp_Between(GetCVar("dnd_exp_scale"), 1, EXP_SCALE_MAX);
 	int creditscale = Clamp_Between(GetCVar("dnd_credit_scale"), 1, CREDIT_SCALE_MAX);
 	int addone = 0;
-	if(pcount > 4)
-		pcount = 4;
+	int expprev, credprev;
 		
 	// add monster scale stuff
 	if(CheckInventory("MonsterLevel") > 1) {
@@ -451,7 +485,7 @@ Script "DND On Kill" KILL {
 	
 	// if full share is on we won't divide by player count, but if it isn't we will
 	if(!GetCVar("dnd_fullshare")) {
-		exptemp = (exptemp * expscale)  / pcount;
+		exptemp = (exptemp * expscale) / pcount;
 		if(exptemp < MIN_EXP_GAIN)
 			exptemp = MIN_EXP_GAIN;
 		credtemp = (credtemp * creditscale) / pcount;
@@ -460,7 +494,6 @@ Script "DND On Kill" KILL {
 	}
 	
 	if(expshare || creditshare) {
-		int expprev, credprev;
 		for(i = 0; i < MAXPLAYERS; ++i) {
 			expprev = exptemp;
 			credprev = credtemp;
@@ -513,89 +546,87 @@ Script "DND On Kill" KILL {
 	}
 	
 	// Handle Drops
+	if(!CheckInventory("Mo_Revived")) {
+		// reuse old variable
+		pnum = CheckInventory("MonsterIsElite");
+		// drop coins if there should be
+		if(GetCVar("dnd_credit_drops")) {
+			// calculate chance of getting credit drops, more chance if monster is an elite and if player has quest
+			// addone is the chance here (reusing old variables)
+			HandleCashDrops(target - P_TIDSTART, pnum);
+		}
 
-	// drop coins if there should be
-	if(GetCVar("dnd_credit_drops")) {
-		// calculate chance of getting credit drops, more chance if monster is an elite and if player has quest
-		int chance = random(0, 1.0);
-		chance -= DND_ELITE_CREDITCHANCE_BONUS * CheckInventory("MonsterIsElite");
-		chance -= DND_ELITEDROP_GAIN * CheckActorInventory(target, "DnD_QuestReward_EliteDropBonus");
-		chance -= Player_Bonuses[target - P_TIDSTART].drop_chance;
-		for(int j = 0; j < MAXCREDITDROPS; ++j)
-			if(CheckInventory("MonsterBaseHealth") < CreditDropThresholds[j]) {
-				if(chance > CreditDropChances[j] + Clamp_Between(GetCVar("dnd_credit_droprateadd"), 0, 100))
-					break;
-				GiveInventory(CreditDroppers[j], 1);
-				break;
-			}
-	}
-
-    if(!GetCVar("dnd_allresearchesfound")) {
-        chance = random(0, DND_RESEARCH_MAX_CHANCE);
-        if(Clamp_Between(GetCVar("dnd_researchdroprate"), 1.0, DND_RESEARCH_MAX_CHANCE) + GetDropChance(target - P_TIDSTART, CheckInventory("MonsterIsElite")) >= chance)
-            GiveInventory("ResearchDropItem", 1);
-    }
-	
-	// Talent Capsule
-	if(RunDefaultDropChance(target - P_TIDSTART, CheckInventory("MonsterIsElite"), DND_TALENTCAPSULE_DROPRATE))
-		SpawnDrop("TalentCapsule", 0, 0);
-	
-	// if elite, roll orb and equipment drops
-	if(CheckInventory("MonsterIsElite")) {
-		// handle orb drops
-		if(RunDefaultDropChance(target - P_TIDSTART, 1, DND_ELITE_BASEDROP + (Clamp_Between(GetCVar("dnd_orb_dropchanceadd"), 0, 100) << 16) / 100))
-			SpawnOrb();
-	}
-	
-	// accessory drops
-	pcount = CheckInventory("MonsterID");
-	if(pcount >= DND_BARONID) {
-		if(pcount <= DND_ARACHNOTRONID)
-			addone = 0.5;
-		else if(pcount >= DND_SPIDERMASTERMINDID && pcount <= DND_CYBERDEMONID)
-			addone = 1.0;
-		if(RunDropChance(target - P_TIDSTART, CheckInventory("MonsterIsElite"), (Clamp_Between(GetCVar("dnd_accessory_droprate"), 0, 100) * addone) / 100, 0, 1.0)) {
-			if((total_level / PlayerCount()) >= Clamp_Between(GetCVar("dnd_accessorylevel"), 1, 100)) {
-				// we can drop the spawner
-				SpawnDrop("AccessorySpawner", 0, 0);
+		if(!GetCVar("dnd_allresearchesfound")) {
+			// make it less likely to drop
+			addone = random(0, DND_RESEARCH_DROPMULT * DND_RESEARCH_MAX_CHANCE);
+			if(RunDropChance(target - P_TIDSTART, pnum, Clamp_Between(GetCVar("dnd_researchdroprate"), 0.0, DND_RESEARCH_MAX_CHANCE), 0.0, addone))
+				GiveInventory("ResearchDropItem", 1);
+		}
+		
+		// Talent Capsule
+		if(RunDefaultDropChance(target - P_TIDSTART, pnum, DND_TALENTCAPSULE_DROPRATE))
+			SpawnTalentCapsule();
+		
+		// Chest Key
+		if(RunDefaultDropChance(target - P_TIDSTART, pnum, DND_CHESTKEY_DROPRATE))
+			SpawnChestKey(target - P_TIDSTART, pnum);
+		
+		// if elite, roll orb and equipment drops
+		if(pnum) {
+			// handle orb drops
+			if(RunDefaultDropChance(target - P_TIDSTART, 1, DND_ELITE_BASEDROP + (Clamp_Between(GetCVar("dnd_orb_dropchanceadd"), 0, 100) << 16) / 100))
+				SpawnOrb();
+		}
+		
+		// accessory drops (accept only from cyber and spider masterminds)
+		if(IsBossType()) {
+			if(RunDropChance(target - P_TIDSTART, pnum, (Clamp_Between(GetCVar("dnd_accessory_droprate"), 0, 100) * 1.0) / 100, 0, 1.0)) {
+				if((total_level / PlayerCount()) >= Clamp_Between(GetCVar("dnd_accessorylevel"), 1, 100)) {
+					// we can drop the spawner
+					SpawnDrop("AccessorySpawner", 0, 0, 0);
+				}
 			}
 		}
-	}
-	
-	// Demon Bane check
-	if(active_quest_id == QUEST_KILL10BOSSES && IsBoss(CheckInventory("MonsterID"))) {
-		GiveActorInventory(target, "DnD_BossKillQuest_Counter", 1);
-		if(!IsQuestComplete(target, QUEST_KILL10BOSSES) && CheckActorInventory(target, "DnD_BossKillQuest_Counter") == DND_QUEST_BOSSKILLER_REQ) {
-			CompleteQuest(target, QUEST_KILL10BOSSES);
-			ACS_NamedExecuteAlways("DND Quest Complete", 0);
+		
+		// Demon Bane check
+		if(active_quest_id == QUEST_KILL10BOSSES && IsBoss(pcount)) {
+			GiveActorInventory(target, "DnD_BossKillQuest_Counter", 1);
+			if(!IsQuestComplete(target, QUEST_KILL10BOSSES) && CheckActorInventory(target, "DnD_BossKillQuest_Counter") == DND_QUEST_BOSSKILLER_REQ)
+				CompleteQuest(target, QUEST_KILL10BOSSES);
 		}
-	}
-	
-	// Elite Slayer check
-	if(active_quest_id == QUEST_KILL20ELITES && CheckInventory("MonsterIsElite")) {
-		GiveActorInventory(target, "DnD_EliteKillQuest_Counter", 1);
-		if(!IsQuestComplete(target, QUEST_KILL20ELITES) && CheckActorInventory(target, "DnD_EliteKillQuest_Counter") == DND_QUEST_ELITEKILLER_REQ) {
-			CompleteQuest(target, QUEST_KILL20ELITES);
-			ACS_NamedExecuteAlways("DND Quest Complete", 0);
+		
+		// Elite Slayer check
+		if(active_quest_id == QUEST_KILL20ELITES && pnum) {
+			GiveActorInventory(target, "DnD_EliteKillQuest_Counter", 1);
+			if(!IsQuestComplete(target, QUEST_KILL20ELITES) && CheckActorInventory(target, "DnD_EliteKillQuest_Counter") == DND_QUEST_ELITEKILLER_REQ)
+				CompleteQuest(target, QUEST_KILL20ELITES);
 		}
-	}
-	
-	// Legendary Kill Item
-	if(CheckInventory("MonsterID") >= LEGENDARY_START) {
-		for(i = 0; i < MAXPLAYERS; ++i) {
-			if(PlayerInGame(i) && IsActorAlive(i + P_TIDSTART)) {
-				UpdateLegendaryKill(i, CheckInventory("MonsterID") - LEGENDARY_START);
-				
-				if(active_quest_id - DND_LEGQUEST_START == CheckInventory("MonsterID") - LEGENDARY_START)
-					CompleteQuest(i + P_TIDSTART, active_quest_id);
+		
+		// Legendary Kill Item
+		if(CheckInventory("MonsterID") >= LEGENDARY_START) {
+			for(i = 0; i < MAXPLAYERS; ++i) {
+				if(PlayerInGame(i) && IsActorAlive(i + P_TIDSTART)) {
+					UpdateLegendaryKill(i, CheckInventory("MonsterID") - LEGENDARY_START);
+					
+					if(active_quest_id - DND_LEGQUEST_START == CheckInventory("MonsterID") - LEGENDARY_START)
+						CompleteQuest(i + P_TIDSTART, active_quest_id);
+				}
 			}
 		}
 	}
+	
+	// if marked by talisman
+	pnum = CheckInventory("HunterTalismanMarkBool");
 	
 	SetActivator(target);
 	// Kill spree
 	if(GetCVar("dnd_killspree"))
-		ACS_ExecuteAlways(829, 0, 1);
+		ACS_NamedExecuteAlways("DND Killing Spree", 0, 1);
+	// Hunter Talisman Heal
+	if(pnum) {
+		GiveInventory("HunterTalismanHealFXSpawner", 1);
+		ACS_NamedExecuteAlways("DnD Health Pickup", 0, GetSpawnHealth() / DND_HUNTERTALISMAN_HEALFACTOR);
+	}
 }
 
 Script "DND Show Kill Digits" (int exp, int credit, int hasstuff) CLIENTSIDE {
@@ -713,7 +744,7 @@ Script 832 (void) {
 
 // Weapon pickup checks, bulkiness armor check and agamotto check
 Script 891 ENTER {
-	int i;
+	int i, temp;
 	while(1) {
 		i = 0;
 		while(i < MAXWEPS) {
@@ -726,9 +757,17 @@ Script 891 ENTER {
 		
 		// Bulkiness
 		if(CheckInventory("Armor")) {
-			GiveInventory("DnD_BoughtArmor", 1);
-			if(CheckInventory("PSTAT_Bulkiness"))
-				SetActorProperty(0, APROP_DAMAGEFACTOR, 1.0 - DND_BULKINESS_GAIN * CheckInventory("PSTAT_Bulkiness"));
+			if(CheckInventory("PSTAT_Bulkiness")) {
+				temp = CheckInventory("PSTAT_Bulkiness");
+				if(temp > 100) {
+					temp -= 100;
+					SetActorProperty(0, APROP_DAMAGEFACTOR, 1.0 - DND_BULKINESS_GAIN * 100 - DND_BULKINESS_GAIN_AFTER100 * temp);
+				}
+				else
+					SetActorProperty(0, APROP_DAMAGEFACTOR, 1.0 - DND_BULKINESS_GAIN * temp);
+				// adjust player knockback resist by modifying their mass
+				UpdatePlayerKnockbackResist();
+			}
 		}
 		else
 			SetActorProperty(0, APROP_DAMAGEFACTOR, 1.0);
@@ -736,21 +775,21 @@ Script 891 ENTER {
 		if(isAlive()) {
 			// Agamotto check
 			if(CheckInventory("AgamottoCheck")) {
-				int velx = GetActorVelX(0), vely = GetActorVelY(0), velz = GetActorVelZ(0);
-				if(velx <= AGAMOTTO_MOVE_WINDOW && velx >= -AGAMOTTO_MOVE_WINDOW &&
-					vely <= AGAMOTTO_MOVE_WINDOW && vely >= -AGAMOTTO_MOVE_WINDOW &&
-					velz <= AGAMOTTO_MOVE_WINDOW && velz >= -AGAMOTTO_MOVE_WINDOW
-				  ) 
-				  {
-						if(!CheckInventory("AgamottoOffense")) {
-							TakeInventory("AgamottoDefense", 1);
-							GiveInventory("AgamottoOffense", 1);
-						}
-				  }
-				  else if(!CheckInventory("AgamottoDefense")) {
+				int input = GetPlayerInput(-1, INPUT_BUTTONS);
+				if(input & (BT_FORWARD | BT_BACK | BT_MOVELEFT | BT_MOVERIGHT)) {
+					if(!CheckInventory("AgamottoDefense")) {
 						GiveInventory("AgamottoDefense", 1);
 						TakeInventory("AgamottoOffense", 1);
-				  }
+					}
+				}
+				else if(!CheckInventory("AgamottoOffense")) {
+					TakeInventory("AgamottoDefense", 1);
+					GiveInventory("AgamottoOffense", 1);
+				}
+			}
+			else {
+				TakeInventory("AgamottoDefense", 1);
+				TakeInventory("AgamottoOffense", 1);
 			}
 			
 			// Sigil Check
@@ -790,7 +829,7 @@ Script 891 ENTER {
 				if(PlayerWeaponUsed[PlayerNumber()] == -1)
 					PlayerWeaponUsed[PlayerNumber()] = CheckInventory("DnD_WeaponID");
 				else if(!CheckInventory("DnD_WeaponFiredOther") && PlayerWeaponUsed[PlayerNumber()] != CheckInventory("DnD_WeaponID"))
-					GiveInventory("DnD_WeaponFiredOther", 1);
+					GiveInventory(Quest_Checkers[QUEST_ONLYONEWEAPON], 1);
 
 				// only slot 2 quest check
 				if(
@@ -819,7 +858,7 @@ Script 891 ENTER {
 				if(
 					active_quest_id == QUEST_ONLYENERGY && !CheckInventory("DnD_UsingEnergy") && !CheckInventory(Quest_Checkers[QUEST_ONLYENERGY])
 				  )
-					GiveInventory("DnD_UsingEnergyFailed", 1);
+					GiveInventory(Quest_Checkers[QUEST_ONLYENERGY], 1);
 			}
 	
 			if(active_quest_id == QUEST_SPEND25K && CheckInventory("DnD_MoneySpentQuest") >= DND_QUEST_MONEYMAKERREQ && !IsQuestComplete(ActivatorTID(), QUEST_SPEND25K))
@@ -833,6 +872,7 @@ Script 891 ENTER {
 
 Script 895 ENTER CLIENTSIDE {
 	int i;
+	NamedRequestScriptPuke("DnD User Dash Status Receive", GetCVar("dnd_dashstatus"));
 	while(1) {
 		i = 0;
 		if(CheckInventory("LeveledUp")) {
@@ -943,6 +983,7 @@ Script 905 (int mode) NET {
 			ThrustThingZ(temptid, 8, 0, 0);
 			Thing_ChangeTID(temptid, 0); // clear tid to prevent stupid shit
 			GiveInventory("ForceWeaponRemove", 1);
+			CleanTempAmmo();
 		}
 	}
 }
@@ -1082,19 +1123,36 @@ Script "DND Special FX Handle" OPEN CLIENTSIDE {
 	}
 }
 
+Script "DnD Remove Check Special" (int sp, int extra) CLIENTSIDE {
+	if(!extra) {
+		if(ConsolePlayerNumber() != sp - 1)
+			Thing_Remove(0);
+	}
+	else {
+		// research remove depends on if the guy has this research
+		if(CheckActorResearchStatus(ConsolePlayerNumber() + P_TIDSTART, sp))
+			Thing_Remove(0);
+	}
+}
+
 Script 920 (int mode) {
 	if(!mode) {
 		SlowPlayer(0, SF_FREEZE, 0);
 	}
-	else if(mode == 1) {
-		if(!CheckInventory("ShowingMenu")) // don't break menu functionality
-			SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
-		RestoreRPGStat(RES_PLAYERSPEED);
-		TakeInventory("P_Frozen", 1);
-	}
-	else if(mode == 2) {
-		if(!CheckInventory("MinigunFiring"))
-			SlowPlayer(0.75, 0, 0);
+	else {
+		// hacky fix: while this player can load, hold back on fixing player movement
+		while(HardcoreSet && PlayerCanLoad[PlayerNumber()])
+			Delay(17);
+		if(mode == 1) {
+			if(!CheckInventory("ShowingMenu")) // don't break menu functionality
+				SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
+			RestoreRPGStat(RES_PLAYERSPEED);
+			TakeInventory("P_Frozen", 1);
+		}
+		else if(mode == 2) {
+			if(!CheckInventory("MinigunFiring"))
+				SlowPlayer(0.75, 0, 0);
+		}
 	}
 }
 
@@ -1135,7 +1193,7 @@ Script 962 (int monsterid, int traits, int traits2) {
 	if(!CheckInventory("DontRun")) {
 		if(!ActivatorTID())
 			GiveMonsterTID();
-		int base, add, level, pcount;
+		int base, add, level, pcount, low, high, temp;
 		if(GetCVar("dnd_monsterscale")) {
 			GiveInventory("DontRun", 1);
 			// scaling code -- delay is because monsters are initialized before enter scripts are executed
@@ -1147,13 +1205,18 @@ Script 962 (int monsterid, int traits, int traits2) {
 			if(!pcount)
 				pcount = 1;
 			level = total_level / pcount;
+			// ensure minions use master's level
+			if(GetActorProperty(0, APROP_MASTERTID)) {
+				printbold(d:GetActorProperty(0, APROP_MASTERTID));
+				level = CheckActorInventory(GetActorProperty(0, APROP_MASTERTID), "MonsterLevel");
+			}
 			if(GetCVar("dnd_randomize_levels")) {
-				int low = Clamp_Between(GetCVar("dnd_monsterlevel_low"), 0, 50);
-				int high = Clamp_Between(GetCVar("dnd_monsterlevel_high"), 0, 50);
+				low = Clamp_Between(GetCVar("dnd_monsterlevel_low"), 0, 50);
+				high = Clamp_Between(GetCVar("dnd_monsterlevel_high"), 0, 50);
 				// give some sort of variety in the levels
 				// subtract level from avg half the time
 				if(random(0, 1)) {
-					int temp = low;
+					temp = low;
 					low = -high;
 					high = -temp;
 				}
@@ -1164,17 +1227,41 @@ Script 962 (int monsterid, int traits, int traits2) {
 			else
 				level = Clamp_Between(level, 1, MAXLEVELS);
 			if(level > 1) {
-				if(level > 50)
-					add = base * (Clamp_Between(GetCVar("dnd_monster_hpscalepercent"), 1, 100) * (100 + DND_AFTER50_INCREMENT) / 100);
+				add = (base * Clamp_Between(GetCVar("dnd_monster_hpscalepercent"), 1, 100)) / 100;
+				if(level > 75)
+					temp = DND_AFTER75_INCREMENT;
+				else if(level > 50)
+					temp = DND_AFTER50_INCREMENT;
 				else
-					add = base * Clamp_Between(GetCVar("dnd_monster_hpscalepercent"), 1, 100);
-				add *= level - 1;
-				// percentage
-				add /= 100;
-				if(GetCVar("dnd_playercount_scales_monsters")) {
-					add *= 1.0 + DND_MONSTERHP_PLAYERSCALE * (Clamp_Between(pcount - 1, 0, DND_MAX_PLAYERHPSCALE));
-					add >>= 16;
+					temp = 1;
+				// we are in boost range for hp
+				if(temp != 1) {
+					if(add > 100) {
+						add /= 100;
+						add *= 100 + temp;
+					}
+					else {
+						add *= 100 + temp;
+						add /= 100;
+					}
 				}
+				// add level factor to it
+				// first overflow check
+				if(add < (INT_MAX - base) / (level - 1)) {
+					add *= level - 1;
+					if(GetCVar("dnd_playercount_scales_monsters")) {
+						if(add > 100) {
+							add /= 100;
+							add *= 100 + DND_MONSTERHP_PLAYERSCALE * (Clamp_Between(pcount - 1, 0, DND_MAX_PLAYERHPSCALE));
+						}
+						else {
+							add *= 100 + DND_MONSTERHP_PLAYERSCALE * (Clamp_Between(pcount - 1, 0, DND_MAX_PLAYERHPSCALE));
+							add /= 100;
+						}
+					}
+				}
+				else
+					add = INT_MAX - base;
 			}
 			SetActorProperty(0, APROP_HEALTH, base + add);
 			SetInventory("MonsterID", monsterid);
@@ -1210,7 +1297,7 @@ Script 962 (int monsterid, int traits, int traits2) {
 			if(CheckInventory("MonsterTraits2") & DND_VITAL) {
 				base = GetActorProperty(0, APROP_HEALTH);
 				add = base * DND_ELITE_VITAL_SCALE / 100;
-				SetActorProperty(0, APROP_HEALTH, base + add);
+				SetActorProperty(0, APROP_HEALTH, Clamp_Between(base + add, 1, INT_MAX));
 				SetInventory("MonsterBaseHealth", GetActorProperty(0, APROP_HEALTH));
 				SetInventory("MonsterMaxHealth", GetActorProperty(0, APROP_HEALTH));
 			}
@@ -1234,6 +1321,9 @@ Script 957 (int category) {
     // wait for the players to enter (returns 0 to imply everyone ready)
     while(max_level <= 0 || PlayersReadyForHardcore())
         Delay(10);
+	// throttle the spawns
+	if(GameType() != GAME_SINGLE_PLAYER)
+		Delay(17 * random(0, DND_MAX_MONSTERDELAY));
 	int roll, bin;
 	// roll legendary monster chance and do checks of it
 	if(!MadeLegendary && category == DND_CYBERDEMONID && random(1, 100) <= Clamp_Between(GetCVar("dnd_legendary_chance"), 1, 100) && max_level >= 25) {
@@ -1383,12 +1473,12 @@ Script 976 ENTER {
 					max_level = GetStat(STAT_LVL);
 				// heal on level up flag is on
 				if(GetCVar("dnd_healonlevelup"))
-					ACS_ExecuteAlways(818, 0, 100, 0);
+					ACS_ExecuteAlways("DnD Health Pickup", 0, 100, 0);
 				ACS_NamedExecuteAlways("DnD Announcer", 0, 1);
 			}
 			
 			// ankh check
-			if(!CheckInventory("P_Invulnerable") && GetActorProperty(0, APROP_HEALTH) == 1 && !CheckInventory("Intervened") && CheckInventory("InterventionSelected") && CheckInventory("CanIntervene")) {
+			if(!CheckInventory("P_Invulnerable") && GetActorProperty(0, APROP_HEALTH) == 1 && !CheckInventory("Intervened") && IsAccessoryEquipped(ActivatorTID(), DND_ACCESSORY_ANGELICANKH) && CheckInventory("CanIntervene")) {
 				GiveInventory("Intervention", 1);
 				GiveInventory("Intervened", 1);
 				TakeInventory("CanIntervene", 1);
@@ -1423,82 +1513,58 @@ Script 977 (int type, int itemnum) CLIENTSIDE {
 }
 
 // Checking for Bonuses
-Script 978 ENTER {
+Script "DnD Bonus Detect" (void) {
 	int KillBonus, ItemBonus, SecretBonus, BonusBonus;
 	int curkills, curitems, cursecrets, bonusval;
+	SetActivator(-1);
 	Delay(35);
+	
 	while(1) {
-		if(PlayerInGame(PlayerNumber())) {
-			if(!GetCVar("dnd_disablelevelbonus")) {
-				curkills = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
-				curitems = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
-				cursecrets = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
-				
-				if(GetLevelInfo(LEVELINFO_TOTAL_MONSTERS)) {
-					if(!KillBonus && curkills && curkills >= GetLevelInfo(LEVELINFO_TOTAL_MONSTERS)) {
-						bonusval = CalculateBonus(BONUS_KILL);
-						SetHudSize(800, 600, 1);
-						SetFont("BIGFONT");
-						HudMessageBold(s:"All monsters have been killed! ", d:bonusval, s:"% Exp bonus!"; HUDMSG_FADEINOUT, KILLBONUSID, CR_RED, 400.4, DnD_MessageY(), 4.0, 1.0, 1.0);
-						LocalAmbientSound("RPG/KillBonus", 127);
-						GiveInventory("DnD_ShowKillBonus", 1);
-						
-						int expbonus = GetStat(STAT_LVLEXP) * bonusval / 100;
-						GiveInventory("Exp", expbonus);
-						GiveInventory("ExpVisual", expbonus);
-						
-						KillBonus = 1;
-					}
-				}
-				else
-					KillBonus = 2; // means there were no monsters at all
-
-				if(GetLevelInfo(LEVELINFO_TOTAL_ITEMS)) {
-					if(!ItemBonus && curitems >= GetLevelInfo(LEVELINFO_TOTAL_ITEMS)) {
-						bonusval = CalculateBonus(BONUS_ITEM);
-						SetHudSize(800, 600, 1);
-						SetFont("BIGFONT");
-						HudMessageBold(s:"All items have been taken! ", d:bonusval, s:" Credits!"; HUDMSG_FADEINOUT, ITEMBONUSID, CR_GOLD, 400.4, DnD_MessageY(), 4.0, 1.0, 1.0);
-						LocalAmbientSound("RPG/ItemBonus", 127);
-						GiveInventory("DnD_ShowItemBonus", 1);
-						GiveInventory("Credit", bonusval);
-						ItemBonus = 1;
-					}
-				}
-				else
-					ItemBonus = 2; // means there were no items at all
-				
-				if(GetLevelInfo(LEVELINFO_TOTAL_SECRETS)) { // if there are some secrets
-					if(!SecretBonus && cursecrets >= GetLevelInfo(LEVELINFO_TOTAL_SECRETS)) {
-						bonusval = CalculateBonus(BONUS_SECRET);
-						SetHudSize(800, 600, 1);
-						SetFont("BIGFONT");
-						HudMessageBold(s:"All secrets have been found! ", d:bonusval, s:"k Budget!"; HUDMSG_FADEINOUT, SECRETBONUSID, CR_GOLD, 400.4, DnD_MessageY(), 4.0, 1.0, 1.0);
-						GiveInventory("DnD_ShowSecretBonus", 1);
-						LocalAmbientSound("RPG/SecretBonus", 127);
-						GiveInventory("Budget", bonusval);
-						SecretBonus = 1;	
-					}
-				}
-				else
-					SecretBonus = 2;
-				
-				// if there was at least some bonus involved!
-				if(KillBonus && ItemBonus && SecretBonus && !BonusBonus && (KillBonus + ItemBonus + SecretBonus != 6)) {
-					//bonusval = CalculateBonus(BONUS_BONUS);
-					SetHudSize(800, 600, 1);
-					SetFont("BIGFONT");
-					HudMessageBold(s:"The entire map is toast! You're fully healed!"; HUDMSG_FADEINOUT, BONUSBONUSID, CR_GOLD, 400.4, DnD_MessageY(), 4.0, 1.0, 1.0);
-					GiveInventory("DnD_ShowBonusBonus", 1);
-					LocalAmbientSound("RPG/BonusBonus", 127);
-					ACS_ExecuteAlways(818, 0, 100, 4); // full heal
-					BonusBonus = 1;
+		if(!GetCVar("dnd_disablelevelbonus")) {
+			curkills = GetLevelInfo(LEVELINFO_KILLED_MONSTERS);
+			curitems = GetLevelInfo(LEVELINFO_FOUND_ITEMS);
+			cursecrets = GetLevelInfo(LEVELINFO_FOUND_SECRETS);
+			
+			if(GetLevelInfo(LEVELINFO_TOTAL_MONSTERS)) {
+				if(!KillBonus && curkills >= GetLevelInfo(LEVELINFO_TOTAL_MONSTERS)) {
+					DistributeBonus(BONUS_KILL);
+					KillBonus = 1;
 				}
 			}
-			SyncClientsideVariables();
+			else
+				KillBonus = 2; // means there were no monsters at all
+
+			if(GetLevelInfo(LEVELINFO_TOTAL_ITEMS)) {
+				if(!ItemBonus && curitems >= GetLevelInfo(LEVELINFO_TOTAL_ITEMS)) {
+					DistributeBonus(BONUS_ITEM);
+					ItemBonus = 1;
+				}
+			}
+			else
+				ItemBonus = 2; // means there were no items at all
+			
+			if(GetLevelInfo(LEVELINFO_TOTAL_SECRETS)) { // if there are some secrets
+				if(!SecretBonus && cursecrets >= GetLevelInfo(LEVELINFO_TOTAL_SECRETS)) {
+					DistributeBonus(BONUS_SECRET);
+					SecretBonus = 1;	
+				}
+			}
+			else
+				SecretBonus = 2;
+			
+			// if there was at least some bonus involved!
+			if(KillBonus && ItemBonus && SecretBonus && !BonusBonus && (KillBonus + ItemBonus + SecretBonus != 6)) {
+				DistributeBonus(BONUS_BONUS);
+				BonusBonus = 1;
+			}
 		}
 		Delay(17);
 	}
+}
+
+Script "DnD Bonus Message Show" (int bonustype) CLIENTSIDE {
+	Delay(5);
+	ShowBonusMessage(bonustype);
 }
 
 Script 980 ENTER {
@@ -1621,9 +1687,11 @@ Script 981 ENTER CLIENTSIDE {
 // Script for Monsters
 Script 982 (int type) {
 	if(type == 2) { // drop heart
-		int target = GetActorProperty(0, APROP_TARGETTID);
-		if(CheckActorInventory(target, "Ability_HeartSeeker") && RunDefaultDropChance(target - P_TIDSTART, CheckInventory("MonsterIsElite"), CHANCE_HEART))
-			SpawnDrop("DemonHeartPickup", 24.0, 16);
+		if(!CheckInventory("Mo_Revived")) {
+			int target = GetActorProperty(0, APROP_TARGETTID);
+			if(CheckActorInventory(target, "Ability_HeartSeeker") && RunDefaultDropChance(target - P_TIDSTART, CheckInventory("MonsterIsElite"), CHANCE_HEART))
+				SpawnDrop("DemonHeartPickup", 24.0, 16, 0);
+		}
 	}
 }
 
@@ -1722,8 +1790,9 @@ Script 986 (int wepnum, int type) {
 Script 987 RESPAWN {
 	Thing_ChangeTID(0, P_TIDSTART + PlayerNumber());
 	TakeInventory("PowerReflection", 1);
+	TakeInventory("DnD_PDead", 1);
 	RestoreRPGStat(RES_PERK_SHARP | RES_PERK_ENDURANCE);
-	ACS_ExecuteAlways(818, 0, 100, 4); // full heal
+	ACS_ExecuteAlways("DnD Health Pickup", 0, 100, 4); // full heal
 	// if game mode is coop, we don't want any sort of reset on death here! make sure it's not coop
 	/*if(GetCVar("Survival")) {
 		if(CheckInventory("CurrentLives"))
@@ -1762,6 +1831,7 @@ Script 989 (int pnum) DISCONNECT {
 	HudMessage(s:""; HUDMSG_PLAIN, DND_HARDCORE_SCREENID, CR_RED, 320.0, 240.0, 1);
 	StatListOpened[pnum] = 0;
 	PlayerLoaded[pnum] = 0;
+	PlayerCanLoad[pnum] = 0;
 	// reset weapon mod variable
 	ResetWeaponMods(pnum);
 	ResetPlayerBonuses(pnum);
@@ -1770,9 +1840,11 @@ Script 989 (int pnum) DISCONNECT {
 
 // End of level checks
 Script 990 UNLOADING {
+	int tid;
 	MapChanged = 1;
 	for(int i = 0; i < MAXPLAYERS; ++i) {
-		int tid = P_TIDSTART + i;
+		tid = P_TIDSTART + i;
+		PlayerSaved[i] = 0;
 	    if(GetActorProperty(tid, APROP_HEALTH) > 0) {
 		    GiveActorInventory(tid, "LevelToken", 1);
 			StatListOpened[i] = 0;
@@ -1801,26 +1873,29 @@ Script 991 ENTER {
 	SetInventory("LevelCredit", 0);
 	setInventory("AllMapOnlyOnce", 0);
 	SetInventory("MapDifficultyClientside", MapDifficulty);
+	SetInventory("DnD_MasterHealerQuest_HealAmount", 0); // reset this upon map restart
+	SetInventory("DnD_BoughtArmor", 0);
 	int pnum = PlayerNumber(), curlvl, i = 0;
 	
 	GiveInventory("ParsingData", 1);
 	// begin hardcore countdown
-	if(HardcoreSet && GetCVar("dnd_hardcore")) {
+	if(HardcoreSet && (GetCVar("dnd_hardcore") ^ GetCVar("dnd_softcore"))) {
+		GiveInventory("P_Frozen", 1);
 		while(GetGameModeState() == GAMESTATE_COUNTDOWN)
 			Delay(17);
 		PlayerCanLoad[PlayerNumber()] = 1;
 		GiveInventory("CanLoad", 1);
 		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN);
-		SetPlayerProperty(0, 2, PROP_INVULNERABILITY );
+		SetPlayerProperty(0, 2, PROP_INVULNERABILITY);
 		// display countdown timer
 		ACS_NamedExecuteAlways("DND Hardcore Timer", 0);
 		// 0 means they are ready
-		while(PlayersReadyForHardcore() && i < DND_HARDCORE_LOADTIME << 1 && PlayerInGame(PlayerNumber())) {
+		while(PlayersReadyForHardcore() && i < (DND_HARDCORE_LOADTIME << 1) && PlayerInGame(pnum)) {
 			// we loaded, reduce on wait time
 			if(!CheckInventory("CanLoad"))
 				PlayerCanLoad[PlayerNumber()] = 0;
 			++i;
-			Delay(TICRATE / 2);
+			Delay(18);
 		}
 	}
 	
@@ -1829,10 +1904,19 @@ Script 991 ENTER {
 		Terminate;
 	}
 	
+	if(HardcoreSet) {
+		// wait for monsters to appear
+		Delay(17 * DND_MAX_MONSTERDELAY);
+	}
+	
+	// Load period is finished, now check for level stats
+	ACS_NamedExecute("DnD Bonus Detect", 0);
+	PlayerDied[PlayerNumber()] = 0;
+	
 	TakeInventory("CanLoad", 1);
 	PlayerCanLoad[PlayerNumber()] = 0;
 	SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN);
-	SetPlayerProperty(0, 0, PROP_INVULNERABILITY );
+	SetPlayerProperty(0, 0, PROP_INVULNERABILITY);
 	TakeInventory("P_Frozen", 1);
 
 	// Checks if we should set the lives to the inventory or not (also includes one time execute things)
@@ -1892,12 +1976,17 @@ Script 991 ENTER {
 	
 	// for properly setting up taltos translucency when spawn protection is on
 	while(GetActorProperty(0, APROP_INVULNERABLE) && !CheckInventory("P_Invulnerable"))
-		Delay(5);
+		Delay(7);
 	if(CheckInventory("TaltosUp"))
 		GiveInventory("TaltosEffect", 1);
 	TakeInventory("QuestWasPicked", 1); // helps sync clientside variable Quest_Pick_Done
 	while(!Quest_Pick_Done)
 		Delay(10);
+	
+	// safety measure, this powerup was somehow removed on map change
+	if(CheckInventory("ArtemisCheck"))
+		GiveInventory("ArtemisPower", 1);
+	
 	GiveInventory("QuestWasPicked", 1);
 	if(active_quest_id != -1) {
 		SetInventory("ActiveQuestID", active_quest_id + 1);
@@ -1933,21 +2022,36 @@ Script 993 ENTER CLIENTSIDE {
 Script "DND Monster Damage Scale" (int flags) {
 	if(flags & 1) // target
 		SetactivatorToTarget(0);
-	int res = (Clamp_Between(CheckInventory("MonsterLevel"), 1, DND_MAX_MONSTERLVL) * Clamp_Between(GetCVar("dnd_monster_dmgscalepercent"), 0.01, 1.0));
+	int res = Clamp_Between(CheckInventory("MonsterLevel"), 1, DND_MAX_MONSTERLVL) * Clamp_Between(GetCVar("dnd_monster_dmgscalepercent"), 0.01, 1.0);
 	if(CheckInventory("MonsterIsElite"))
 		res = FixedMul(res, 1.0 + GetEliteBonusDamage());
 	if(IsExtraStrong())
 		res = FixedMul(res, 1.0 + DND_ELITE_EXTRASTRONG_BONUS);
 	if(CheckInventory("MonsterLevel") > 50)
-		res = FixedMul(res, 1.0 + DND_AFTER50_INCREMENT_F);
+		res = FixedMul(res, 1.0 + DND_AFTER50_INCREMENT_DAMAGE);
 	SetResultValue(res >> 16);
+}
+
+// saved here for future in case damage values fuck up
+Script "DND Monster Damage Scale2" (int dmg, int flags) {
+	if(flags & 1) // target
+		SetactivatorToTarget(0);
+	int res = Clamp_Between(CheckInventory("MonsterLevel"), 1, DND_MAX_MONSTERLVL) * Clamp_Between(GetCVar("dnd_monster_dmgscalepercent"), 0.01, 1.0);
+	if(CheckInventory("MonsterIsElite"))
+		res = FixedMul(res, 1.0 + GetEliteBonusDamage());
+	if(IsExtraStrong())
+		res = FixedMul(res, 1.0 + DND_ELITE_EXTRASTRONG_BONUS);
+	if(CheckInventory("MonsterLevel") > 50)
+		res = FixedMul(res, 1.0 + DND_AFTER50_INCREMENT_DAMAGE);
+	SetResultValue((dmg * res) >> 16);
 }
 
 // A generic checker function
 Script 994 (int type, int extra) {
 	int res = 0;
 	if(!type) {
-		if(GetAmmoCapacity("Shell") != GetMaximumAmmoCapacity(AMMO_SHELL))
+		// check less because theres orb of holding now
+		if(GetAmmoCapacity("Shell") < GetMaximumAmmoCapacity(AMMO_SHELL))
 		  res = 1;
 	}
 	if(type == 1) {
@@ -1956,7 +2060,8 @@ Script 994 (int type, int extra) {
 				res = 2;
 			if(!CheckInventory("FireLeft") && CheckInventory("AkimboClipRight"))
 				res = 3;
-			if(!res)
+			// force reload when out of ammo
+			if(!res || (!CheckInventory("AkimboClipLeft") && !CheckInventory("AkimboClipRight")))
 				res = 1;
 		}
 		else { // reload check
@@ -2031,6 +2136,14 @@ Script 994 (int type, int extra) {
 	SetResultValue(res);
 }
 
+Script "DnD Check Special Match" (void) {
+	int mspecial = GetActorProperty(0, APROP_MASS);
+	int who = 0;
+	SetActivatorToTarget(0);
+	who = ActivatorTID();
+	SetResultValue(who - P_TIDSTART == mspecial - 1);
+}
+
 // Custom Powerup script
 Script "DnD Player On Hit" (int power) {
 	if(!power) {
@@ -2057,8 +2170,8 @@ Script "DnD Player On Hit" (int power) {
 
 // Backpack / Research script
 Script 996 (int type, int id) {
+	int j, temp;
     if(!type) {
-		int j;
         for(j = 0; j < MAXAMMOTYPES; ++j) {
             if(GetCVar("dnd_firstbackpackold") && !CheckInventory("BackpackCounter"))
                 SetAmmoCapacity(AmmoTypes[j], AmmoCapWithBonuses(InitialCapacity[j] << 1));
@@ -2082,7 +2195,8 @@ Script 996 (int type, int id) {
         GiveResearch(id);
     }
     else {
-        SpawnDrop(StrParam(s:"ResearchModule_", s:Research_List[random(0, MAX_RESEARCHES - 1)]), 24.0, 16);
+		if(!CheckInventory("Mo_Revived"))
+			SpawnResearch();
     }
 }
 
@@ -2210,43 +2324,45 @@ Script 998 (int wepnum, int side, int extra) {
 
 // Regeneration
 Script 999 ENTER {
-	while(1) {
-		int cur, amt, lim;
-		if(isAlive() && CheckInventory("Ability_Regeneration")) {
-			cur = GetActorProperty(0, APROP_HEALTH);
-			// if we got the quest, our lim is half our cap, otherwise 1/3rd the cap
-			lim = CheckInventory("DnD_QuestReward_RegenCap") ? GetSpawnHealth() / 2 : GetSpawnHealth() / 3;
-			amt = lim * DND_REGEN_PERCENT / 100;
-			if(!CheckInventory("RegenStopper") && !IsAccessoryEquipped(ActivatorTID(), DND_ACCESSORY_GRYPHONBOOTS) && cur < lim) {
-				if(cur > lim - amt)
-				    GiveInventory("HealthBonusX", amt);
+	int cur, amt, lim, pnum = PlayerNumber(), this = ActivatorTID();
+	while(PlayerInGame(pnum)) {
+		if(isAlive()) { 
+			if(CheckInventory("Ability_Regeneration")) {
+				cur = GetActorProperty(0, APROP_HEALTH);
+				// if we got the quest, our lim is half our cap, otherwise 1/3rd the cap
+				lim = GetSpawnHealth();
+				if(CheckInventory("DnD_QuestReward_RegenCap"))
+					lim /= 2;
 				else
-				    GiveInventory("HealthBonusX", lim - cur);
-				GiveInventory("RegenEffect", 1);
-				LocalAmbientSound("ability/regen", 127);
+					lim /= 3;
+				amt = lim * DND_REGEN_PERCENT / 100;
+				if(!CheckInventory("RegenStopper") && !IsAccessoryEquipped(this, DND_ACCESSORY_GRYPHONBOOTS) && cur < lim) {
+					if(cur > lim - amt)
+						GiveInventory("HealthBonusX", amt);
+					else
+						GiveInventory("HealthBonusX", lim - cur);
+					GiveInventory("RegenEffect", 1);
+					LocalAmbientSound("ability/regen", 127);
+				}
 			}
-		}
 		
-		cur = GetArmorType("CyberneticArmor", PlayerNumber());
-		if(isAlive()) {
-			lim = GetArmorSpecificCap(DND_CYBERNETICARMOR_AMOUNT);
-			amt = lim * DND_REGEN_PERCENT / 100;
-			lim >>= 1; // half limit for this armor
-			if(cur && !IsAccessoryEquipped(ActivatorTID(), DND_ACCESSORY_GRYPHONBOOTS) && cur < lim && !CheckInventory("P_Damaged")) {
-				if(cur < lim - amt)
-					GiveInventory("NewArmorBonus", amt);
-				else
-					GiveInventory("NewArmorBonus", lim - cur);
-				GiveInventory("CyberneticEffect", 1);
-				LocalAmbientSound("items/armorbonus", 127);
+			cur = GetArmorType("CyberneticArmor", pnum);
+			if(cur) {
+				lim = GetArmorSpecificCap(DND_CYBERNETICARMOR_AMOUNT);
+				amt = lim * DND_REGEN_PERCENT / 100;
+				lim >>= 1; // half limit for this armor
+				if(cur && !IsAccessoryEquipped(this, DND_ACCESSORY_GRYPHONBOOTS) && cur < lim && !CheckInventory("P_Damaged")) {
+					if(cur < lim - amt)
+						GiveInventory("NewArmorBonus", amt);
+					else
+						GiveInventory("NewArmorBonus", lim - cur);
+					GiveInventory("CyberneticEffect", 1);
+					LocalAmbientSound("items/armorbonus", 127);
+				}
+				
+				if(active_quest_id == QUEST_10SPREES && !IsQuestComplete(this, QUEST_10SPREES) && CheckInventory("DnD_BerserkQuest_SpreeCounter") >= DND_QUEST_BERSERK_SPREEREQ)
+					CompleteQuest(this, QUEST_10SPREES);
 			}
-			
-			if(active_quest_id == QUEST_10SPREES && !IsQuestComplete(ActivatorTID(), QUEST_10SPREES) && CheckInventory("DnD_BerserkQuest_SpreeCounter") >= DND_QUEST_BERSERK_SPREEREQ) {
-				CompleteQuest(ActivatorTID(), QUEST_10SPREES);
-				ACS_NamedExecuteAlways("DND Quest Complete", 0);
-			}
-			if(active_quest_id == QUEST_NOHEALINGPICKUP && CheckInventory("DnD_UseNoHealth"))
-				FailQuest(QUEST_NOHEALINGPICKUP);
 		}
 		Delay(35);
 	}
@@ -2267,23 +2383,22 @@ Script "DND Riotgun Decide" (void) {
 	else if(CheckInventory("SpecialAmmoMode_4") == AMMO_NITROGENSHELL)
 		mode = "NitroShell";
 	if(CheckInventory("RiotgunClip") == GetAmmoCapacity("RiotgunClip") || CheckInventory("RiotgunClip") == CheckInventory(mode))
-		GiveInventory("Riotgun_ModeSwitchSignal", 1);
+		SetInventory("RiotgunReloadModeDecide", 2); // mode switch
 	else if(CheckInventory("RiotgunClip") < GetAmmoCapacity("RiotgunClip") && CheckInventory(mode) > CheckInventory("RiotgunClip"))
-		GiveInventory("Riotgun_ReloadSignal", 1);
+		SetInventory("RiotgunReloadModeDecide", 1); // reload
 }
 
 Script "DND Elite Special FX" (void) CLIENTSIDE {
-	int r = GetActorProperty(0, APROP_RADIUS), h = GetActorProperty(0, APROP_HEIGHT);
-	while(GetActorProperty(0, APROP_HEALTH) > 0) {
-		for(int i = 0; i < DND_ELITE_FX_DENSITY; ++i) {
+	int i, waitcounter = 0;
+	while(isAlive()) {
+		for(i = 0; i < DND_ELITE_FX_DENSITY; ++i) {
 			GiveInventory("EliteFXSpawner", 1);
 			Delay(1);
 		}
 		Delay(8);
 	}
-	int waitcounter = 0;
 	// wait while we are dead, something might resurrect
-	while(GetActorProperty(0, APROP_HEALTH) <= 0) {
+	while(!isAlive()) {
 		Delay(70);
 		if(waitcounter++ == MAX_ELITE_FX_WAIT)
 			Terminate;
@@ -2291,7 +2406,7 @@ Script "DND Elite Special FX" (void) CLIENTSIDE {
 	Restart;
 }
 
-Script 1000 (void) {
+Script 1000 (int isSoftcore) {
 	int i;
 	for(i = 0; i < MAXFLAGS; ++i)
 		ConsoleCommand(StrParam(s:FlagCheckList[i], s: " ", d:FlagAcceptedValues[i]));
@@ -2300,8 +2415,15 @@ Script 1000 (void) {
 	// handle fixed point shit here because getcvar is stupid with them
 	ConsoleCommand("sv_coop_damagefactor 1.0");
 	ConsoleCommand("dnd_monster_dmgscalepercent 0.04999");
-	ConsoleCommand("dnd_researchdroprate 1.0");
-	ConsoleCommand("dnd_hardcore true");
+	ConsoleCommand("dnd_researchdroprate 0.01");
+	if(isSoftcore) {
+		ConsoleCommand("dnd_softcore true");
+		ConsoleCommand("dnd_hardcore false");
+	}
+	else {
+		ConsoleCommand("dnd_hardcore true");
+		ConsoleCommand("dnd_softcore false");
+	}
 	ConsoleCommand("authhostname auth.zandronum.com:16666");
 	ConsoleCommand("map map01");
 }
@@ -2381,7 +2503,7 @@ Script 1002 (void) NET CLIENTSIDE {
 	}
 }
 
-Script "DND Quest Complete" (void) CLIENTSIDE {
+Script "DND Quest Complete" (int isFail) CLIENTSIDE {
 	while(CheckInventory("ShowingMenu"))
 		Delay(35);
 	int qid = CheckInventory("QuestCompletionToken") - 1;
@@ -2393,18 +2515,29 @@ Script "DND Quest Complete" (void) CLIENTSIDE {
 	while(screenres1 == -1)
 		Delay(17);
 	GiveInventory("TipBoxOpen", 1);
-	LocalAmbientSound("Quest/Done", 127);
 	SetHudSize(640, 480, 1);
 	SetFont("QUESTBOX");
 	HudMessage(s:"A"; HUDMSG_FADEINOUT, SURVIVEID, CR_UNTRANSLATED, 512.0 + screenres2 + addx, 120.0, 3.0, 1.0, 1.0);
 	SetHudSize(960, 600, 1);
 	SetFont("OBJFONT");
-	HudMessage
-	(
-		s:"\cf", s:Quest_Description[qid][QUEST_NAME],
-		s:"\c-\n\c[Y5]Quest completed!";
-		HUDMSG_FADEINOUT, SURVIVETEXTID, CR_WHITE, 624.1 + 3 * screenres2 / 2, 104.1, 3.0, 1.0, 1.0
-	);
+	if(!isFail) {
+		LocalAmbientSound("Quest/Done", 127);
+		HudMessage
+		(
+			s:"\cf", s:Quest_Description[qid][QUEST_NAME],
+			s:"\c-\n\c[Y5]Quest completed!";
+			HUDMSG_FADEINOUT, SURVIVETEXTID, CR_WHITE, 624.1 + 3 * screenres2 / 2, 104.1, 3.0, 1.0, 1.0
+		);
+	}
+	else {
+		LocalAmbientSound("Quest/Fail", 127);
+		HudMessage
+		(
+			s:"\cf", s:Quest_Description[qid][QUEST_NAME],
+			s:"\c-\n\c[B1]Quest failed!";
+			HUDMSG_FADEINOUT, SURVIVETEXTID, CR_WHITE, 624.1 + 3 * screenres2 / 2, 104.1, 3.0, 1.0, 1.0
+		);
+	}
 }
 
 // Used in Select statement of weapons, caches the weapon damage numbers this weapon can cause
@@ -2438,6 +2571,7 @@ Script "DND Weapon Damage Retrieve" (int dmg_id, int talent_type, int flags) {
 	else if(CheckInventory("DnD_WeaponID") == DND_WEAPON_DUSKBLADE)
 		res = smart_mul(res, 1.0 + DND_DUSKBLADE_DMGPERSTACK * CheckInventory("SwordHitCharge"));
 	
+	// quest or accessory bonuses
 	if(flags & DND_WDMG_ISOCCULT || talent_type == TALENT_OCCULT) // is occult (add demon bane bonus)
 		res = smart_mul(res, 1.0 + DND_DEMONBANE_GAIN * IsAccessoryEquipped(ActivatorTID(), DND_ACCESSORY_DEMONBANE));
 	if(flags & DND_WDMG_ISPISTOL) // gunslinger affected
@@ -2446,17 +2580,21 @@ Script "DND Weapon Damage Retrieve" (int dmg_id, int talent_type, int flags) {
 		res = smart_mul(res, 1.0 + DND_BOOMSTICK_GAIN * CheckInventory(Quest_List[QUEST_NOSHOTGUNS].qreward));
 	if(flags & DND_WDMG_ISSUPER)
 		res = smart_mul(res, 1.0 + DND_SUPERWEAPON_GAIN * CheckInventory(Quest_List[QUEST_NOSUPERWEAPONS].qreward));
+	
+	// include the talent bonus now
 	// occult uses intellect
 	if(flags & DND_WDMG_ISOCCULT || talent_type == TALENT_OCCULT)
 		res = smart_mul(res, (1.0 + (TALENT_INCREASE + TALENT_PER_INT * GetIntellect()) * CheckInventory(TalentNames[talent_type])));
 	else
 		res = smart_mul(res, (1.0 + (TALENT_INCREASE + TALENT_PER_DEX * GetDexterity()) * CheckInventory(TalentNames[talent_type])));
 	// crit chance
-	if(CheckCritChance())
+	if(CheckCritChance()) {
 		res = smart_mul(res, GetCritModifier());
+		HandleHunterTalisman();
+	}
 	// include enhancement orb bonuses
 	if(Player_Weapon_Infos[pnum][wepid].enchants)
-		res = smart_mul(res, (1.0 + 0.01 * Player_Weapon_Infos[pnum][wepid].enchants));
+		res = smart_mul(res, (1.0 + ENHANCEORB_BONUS * Player_Weapon_Infos[pnum][wepid].enchants));
 	if(res >= 1.0)
 		res >>= 16;
 	SetResultValue(res);
@@ -2477,8 +2615,10 @@ Script "DND Weapon Damage Scale" (int dmg, int talent_type, int flags) {
 	else
 		dmg = smart_mul(dmg, (1.0 + (TALENT_INCREASE + TALENT_PER_DEX * GetDexterity()) * CheckInventory(TalentNames[talent_type])));
 	// finally crit chance
-	if(CheckDeadlinessCrit())
+	if(CheckCritChance()) {
 		dmg = smart_mul(dmg, GetCritModifier());
+		HandleHunterTalisman();
+	}
 	if(dmg >= 1.0)
 		dmg >>= 16;
 	SetResultValue(dmg);
@@ -2494,7 +2634,7 @@ Script "DND Armor Pickup Check" (int amount, int armor_type) {
 }
 
 Script "DND Armor Give" (int armor_type, int amount) {
-	HandleArmorPickup(armor_type, amount);
+	HandleArmorPickup(armor_type, amount, 0);
 }
 
 Script "DND Get Talent" (int talent_type) {
@@ -2509,6 +2649,28 @@ Script "DND Acid Rifle Bolt Stick" (int type) {
 	else
 		res = IsActorAlive(tracer);
 	SetResultValue(res);
+}
+
+Script "DND Demon Seal FX Spawn" (int tracer) CLIENTSIDE {
+	Spawn("DemonSealDebuffFXSpawner", GetActorX(tracer), GetActorY(tracer), GetActorZ(tracer), 0);
+}
+
+Script "DND Demon Seal FX" (void) {
+	int tracer = ActivatorTID();
+	if(!CheckActorInventory(tracer, "DemonSealDamageDebuff")) {
+		GiveActorInventory(tracer, "DemonSealDamageDebuff", 1);
+		GiveActorInventory(tracer, "DemonSealResistDebuff", 1);
+		if(isActorAlive(tracer)) {
+			PlaySound(tracer, "DemonSeal/debuff", 6, 0.9, 0, 1.0);
+			// loops at 4.8 seconds, zandro doesnt know how to stop looping this sound for whatever reason...
+			//PlaySound(tracer, "DemonSeal/debuffloop", 7, 0.5, 0, 1.3);
+		}
+		while(isActorAlive(tracer) && CheckActorInventory(tracer, "DemonSealDamageDebuff")) {
+			ACS_NamedExecuteAlways("DND Demon Seal FX Spawn", 0, tracer);
+			Delay(1);
+		}
+		//StopSound(tracer, 7);
+	}
 }
 
 Script "DND Trail Spawner" (int actortype, int density, int target) CLIENTSIDE {
@@ -2574,7 +2736,7 @@ Script "DND Thunderstaff Bolts" (int isfulldmg) {
 		tlist[i].dist = INT_MAX;
 	}
 	int tcount = 0;
-	
+	int tidlim = 0;
 	// pick N closest targets as a list of targets to hit
 	for(i = DND_MONSTERTID_BEGIN; i < dnd_monster_tid; ++i) {
 		if(CheckActorInventory(i, "ThunderTarget") && IsActorAlive(i)) {
@@ -2604,7 +2766,8 @@ Script "DND Thunderstaff Bolts" (int isfulldmg) {
 		}
 	}
 	// clean this part later
-	for(i = AVATAR_BASE_TID; i < AvatarTID; ++i) {
+	tidlim = AVATAR_BASE_TID + AvatarTID;
+	for(i = AVATAR_BASE_TID; i < tidlim; ++i) {
 		if(CheckActorInventory(i, "ThunderTarget") && IsActorAlive(i)) {
 			dist = fdistance(0, i);
 			// insert sorted
@@ -2631,7 +2794,9 @@ Script "DND Thunderstaff Bolts" (int isfulldmg) {
 			}
 		}
 	}
-	for(i = ZEALOT_BASE_TID; i < ZealotTID; ++i) {
+	
+	tidlim = ZEALOT_BASE_TID + ZealotTID;
+	for(i = ZEALOT_BASE_TID; i < tidlim; ++i) {
 		if(CheckActorInventory(i, "ThunderTarget") && IsActorAlive(i)) {
 			dist = fdistance(0, i);
 			// insert sorted
@@ -2658,7 +2823,9 @@ Script "DND Thunderstaff Bolts" (int isfulldmg) {
 			}
 		}
 	}
-	for(i = PURP_DEM_TID; i < PurpDemTID; ++i) {
+	
+	tidlim = PURP_DEM_TID + PurpDemTID;
+	for(i = PURP_DEM_TID; i < tidlim; ++i) {
 		if(CheckActorInventory(i, "ThunderTarget") && IsActorAlive(i)) {
 			dist = fdistance(0, i);
 			// insert sorted
@@ -2751,8 +2918,9 @@ Script "DND Thunder Ring" (int radius) CLIENTSIDE {
 Script "DND Thunderstaff Lightning" (int isfulldmg) {
 	int i, this = ActivatorTID();
 	str toSpawn = isfulldmg ? "ThunderstaffExp3_FullDMG" : "ThunderstaffExp3";
-	str dmgtype = isfulldmg ? "Lightning" : "LightningFull";
+	str dmgtype = isfulldmg ? "LightningFull" : "Lightning";
 	int dmg = ACS_NamedExecuteWithResult("DND Weapon Damage Retrieve", DND_DMGID_2, TALENT_ELEMENTAL) << 1;
+	int tidlim = 0;
 	
 	for(i = DND_MONSTERTID_BEGIN; i < dnd_monster_tid; ++i) {
 		if(CheckActorInventory(i, "ThunderStrike") && IsActorAlive(i)) {
@@ -2767,7 +2935,8 @@ Script "DND Thunderstaff Lightning" (int isfulldmg) {
 		}
 	}
 	// clean this part later
-	for(i = AVATAR_BASE_TID; i < AvatarTID; ++i) {
+	tidlim = AVATAR_BASE_TID + AvatarTID;
+	for(i = AVATAR_BASE_TID; i < tidlim; ++i) {
 		if(CheckActorInventory(i, "ThunderStrike") && IsActorAlive(i)) {
 			ACS_NamedExecuteAlways("DND ThunderStaff FX Spawn", 0, i);
 			SpawnForced(toSpawn, GetActorX(i), GetActorY(i), GetActorFloorZ(i) + 16.0, DND_THUNDERSTAFF_DAMAGERTID);
@@ -2779,7 +2948,8 @@ Script "DND Thunderstaff Lightning" (int isfulldmg) {
 			SetActivator(this);
 		}
 	}
-	for(i = ZEALOT_BASE_TID; i < ZealotTID; ++i) {
+	tidlim = ZEALOT_BASE_TID + ZealotTID;
+	for(i = ZEALOT_BASE_TID; i < tidlim; ++i) {
 		if(CheckActorInventory(i, "ThunderStrike") && IsActorAlive(i)) {
 			ACS_NamedExecuteAlways("DND ThunderStaff FX Spawn", 0, i);
 			SpawnForced(toSpawn, GetActorX(i), GetActorY(i), GetActorFloorZ(i) + 16.0, DND_THUNDERSTAFF_DAMAGERTID);
@@ -2791,7 +2961,8 @@ Script "DND Thunderstaff Lightning" (int isfulldmg) {
 			SetActivator(this);
 		}
 	}
-	for(i = PURP_DEM_TID; i < PurpDemTID; ++i) {
+	tidlim = PURP_DEM_TID + PurpDemTID;
+	for(i = PURP_DEM_TID; i < tidlim; ++i) {
 		if(CheckActorInventory(i, "ThunderStrike") && IsActorAlive(i)) {
 			GiveActorInventory(i, "ThunderStaffLightningFX_Spawner", 1);
 			SpawnForced(toSpawn, GetActorX(i), GetActorY(i), GetActorFloorZ(i) + 16.0, DND_THUNDERSTAFF_DAMAGERTID);
@@ -2817,6 +2988,7 @@ Script "DND HeavyGL Check" (int x, int y, int z) {
 }
 
 Script "DND Orb Use Message" (void) CLIENTSIDE {
+	Delay(5);
 	HandleOrbUseMessage(CheckInventory("OrbUseType") - 1, CheckInventory("OrbResult"));
 }
 
@@ -2866,6 +3038,8 @@ Script "DND Hardcore Timer" (void) CLIENTSIDE {
 		HudMessage(s:"You have \cd", d:DND_HARDCORE_LOADTIME - i / 2, s:"\c- seconds to load your character!\n    You can skip using \"\cjskipload\c-\" command."; HUDMSG_PLAIN, DND_HARDCORE_SCREENID, CR_RED, 320.4, 240.0, 0);
 		Delay(TICRATE / 2);
 	}
+	HudMessage(s:"Loading Monsters..."; HUDMSG_PLAIN, DND_HARDCORE_SCREENID, CR_RED, 320.4, 240.0, 0);
+	Delay(17 * DND_MAX_MONSTERDELAY);
 	HudMessage(s:""; HUDMSG_PLAIN, DND_HARDCORE_SCREENID, CR_RED, 320.0, 240.0, 1);
 }
 
@@ -2875,4 +3049,35 @@ Script 1004 (void) NET {
 		TakeInventory("CanLoad", 1);
 		PlayerCanLoad[PlayerNumber()] = 0;
 	}
+}
+
+Script "DnD User Dash Status Receive" (int status) NET {
+	SetActorInventory(ActivatorTID(), "DashDisabled", !status);
+}
+
+Script "DnD Drop Orb" (void) {
+	SpawnOrb();
+}
+
+Script "DnD Check Special GameMode" (void) {
+	SetResultValue(HardcoreSet);
+}
+
+Script "DnD Talisman Mark Timer" (int counter) {
+	GiveInventory("HunterTalismanMarkBool", 1);
+	for(int i = 0; i < counter; ++i)
+		Delay(35);
+	TakeInventory("HunterTalismanMarkBool", 1);
+}
+
+Script "DnD Talisman Mark" (void) CLIENTSIDE {
+	int this = ActivatorTID();
+	Spawn("HunterTalismanFX", GetActorX(0), GetActorY(0), GetActorZ(0) + 48.0, DND_TALISMAN_MARK);
+	SetActivator(DND_TALISMAN_MARK);
+	SetPointer(AAPTR_TARGET, this);
+	Thing_ChangeTID(DND_TALISMAN_MARK, 0);
+}
+
+Script 1400 (void) NET {
+	Player_Weapon_Infos[0][0].wep_bonuses[WEP_BONUS_CRIT].amt = 1.0;
 }

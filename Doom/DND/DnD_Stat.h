@@ -3,27 +3,42 @@
 
 #include "DnD_Quests.h"
 #include "DnD_Common.h"
+#include "DnD_Charms.h"
 
 #define DND_BASE_PLAYERSPEED 1.0
 
 #define SHARPSHOOTING_DAMAGE 5
 #define ENDURANCE_RESIST 5
-#define DND_BULKINESS_GAIN 0.0075
+#define DND_BULKINESS_GAIN 0.006
+#define DND_BULKINESS_GAIN_AFTER100 0.0025
 #define DND_TALENT_INCREASE 5.0
-#define DND_DEX_GAIN 0.15
-#define DND_INT_GAIN 0.15
+#define DND_DEX_GAIN 0.1
+#define DND_INT_GAIN 0.1
 #define DND_VIT_INCREASE 4
-#define DND_STR_GAIN 0.9
+#define DND_STR_GAIN 0.09
 #define DND_ARMOR_PER_STR 3
 #define DND_CHR_GAIN 0.5
-#define DND_LUCK_GAIN 0.015
-#define DND_TALENTCAPSULE_DROPRATE 0.015
+#define DND_LUCK_GAIN 0.15 // 15% multiplicative luck
+#define DND_TALENTCAPSULE_DROPRATE 0.01
+#define DND_CHESTKEY_DROPRATE 0.025
 #define DND_TALENTPOINT_MARK 4
+
+#define PERK_MEDICBONUS 10 // percent
+#define PERK_MEDICSTOREBONUS 15
+#define PERK_DEADLINESS_BONUS 0.02
+
+#define DND_BUL_KNOCKBACK_GAIN 25
+#define DND_STR_KNOCKBACK_GAIN 50
+#define DND_BASE_PLAYER_MASS 100
 
 #define DND_STAT_FULLMAX 200
 #define DND_BASE_ARMOR 200
 #define DND_BASE_ARMORCAP 300
 #define DND_PERK_MAX 10
+
+#define CELESTIAL_BOOST 25 // percent
+#define DND_VEIL_FACTOR 10 // percent
+#define DND_HUNTERTALISMAN_HEALFACTOR 33
 
 // RPG ELEMENTS
 int Exp_ColorSet[8] = { 4, 16, 112, 160, 176, 196, 231, 251 };
@@ -32,13 +47,16 @@ int Exp_ColorSet[8] = { 4, 16, 112, 160, 176, 196, 231, 251 };
 
 int LevelCurve[MAXLEVELS + 1] = { 100, 264, 480, 696, 912, 1128, 1340, 1560, 1780, 1990, 2210, 2420, 2640, 2860, 4200, 5800, 6100, 6600, 6900, 8350, 9900, 10300, 10900, 11400, 11800, 12300, 12800, 13300, 13800, 14300, 19000, 22700, 27000, 31900, 37900, 45000, 53300, 63000, 75000, 89000, 105000, 125000, 149000, 175000, 209000, 247000, 294000, 348000, 412000, 490000, 579000, 680000, 820000, 970000, 1150000, 1360000, 1610000, 1920000, 2270000, 2690000, 3200000, 3780000, 4490000, 5260000, 6300000, 7500000, 8900000, 10600000, 12500000, 14800000, 17500000, 20900000, 24700000, 29300000, 34800000, 41200000, 48900000, 57200000, 69000000, 82000000, 96000000, 115000000, 136000000, 161000000, 192000000, 227000000, 269000000, 319000000, 378000000, 449000000, 528000000, 630000000, 750000000, 890000000, 1050000000, 1250000000, 1480000000, 1750000000, 2090000000, 2147483647, 2147483647 };
 
+// holds saved status for players
+bool PlayerSaved[MAXPLAYERS];
+bool PlayerDied[MAXPLAYERS];
+
 int GetExpLimit() {
 	return LevelCurve[GetStat(STAT_LVL) - 1];
 }
 
 enum {
 	TALENT_BULLET = 0,
-	TALENT_SHELL,
 	TALENT_MELEE,
 	TALENT_OCCULT,
 	TALENT_EXPLOSIVE,
@@ -48,8 +66,7 @@ enum {
 
 #define MAX_TALENTS TALENT_ELEMENTAL + 1
 str TalentNames[MAX_TALENTS] = {
-	"Talent_Bullet",
-	"Talent_Shell",
+	"Talent_Ballistic",
 	"Talent_Melee",
 	"Talent_Occult",
 	"Talent_Explosive",
@@ -58,8 +75,7 @@ str TalentNames[MAX_TALENTS] = {
 };
 
 str TalentTypeNames[MAX_TALENTS] = {
-	"Bullet",
-	"Shell",
+	"Ballistic",
 	"Melee",
 	"Occult",
 	"Explosive",
@@ -198,9 +214,12 @@ enum {
 	DND_ACCESSORY_AGAMOTTO = 1024,
 	DND_ACCESSORY_GRYPHONBOOTS = 2048,
 	DND_ACCESSORY_LICHARM = 4096,
-	DND_ACCESSORY_SIGILELEMENTS = 8192
+	DND_ACCESSORY_SIGILELEMENTS = 8192,
+	DND_ACCESSORY_CELESTIAL = 16384,
+	DND_ACCESSORY_VEIL = 32768,
+	DND_ACCESSORY_HUNTERTALISMAN = 65536,
 };
-#define MAX_ACCESSORY 14
+#define MAX_ACCESSORY 17
 #define DND_ACCESSORY_BASELIMIT 2
 
 enum {
@@ -253,18 +272,31 @@ int ArmorBaseAmounts[MAXARMORS] = {
 	200,
 	300,
 	
-	150,
-	150,
-	150,
-	150,
-	150,
+	200,
+	200,
+	200,
+	200,
+	200,
 	
 	400,
-	200,
-	150,
-	200,
+	300,
 	250,
-	150
+	400,
+	400,
+	250
+};
+
+enum {
+	DND_CKEY_BRONZE,
+	DND_CKEY_SILVER,
+	DND_CKEY_GOLD
+};
+
+#define MAX_CHEST_KEYS DND_CKEY_GOLD + 1
+str ChestKeyTypes[MAX_CHEST_KEYS] = {
+	"BronzeChestKey",
+	"SilverChestKey",
+	"GoldChestKey"
 };
 
 int GetStat(int stat_id) {
@@ -319,6 +351,24 @@ int GetBonusPlayerSpeed(int pnum) {
 
 int GetPlayerSpeed(int pnum) {
 	return DND_BASE_PLAYERSPEED + GetBonusPlayerSpeed(pnum);
+}
+
+int GetDexterity() {
+	int res = CheckInventory("PSTAT_Dexterity");
+	if(CheckInventory("DnD_QuestReward_TalentIncrease"))
+		res = res * (100 + DND_QUEST_TALENTBONUS) / 100;
+	return res;
+}
+
+int GetIntellect() {
+	int res = CheckInventory("PSTAT_Intellect");
+	if(CheckInventory("DnD_QuestReward_TalentIncrease"))
+		res = res * (100 + DND_QUEST_TALENTBONUS) / 100;
+	return res;
+}
+
+int GetStrength() {
+	return CheckInventory("PSTAT_Strength");
 }
 
 // Generic Player RPG Stat restore function
@@ -385,6 +435,15 @@ void UnequipAccessory(int acc) {
 	DecideAccessories();
 }
 
+int GetHealingBonuses() {
+	int bonus = PERK_MEDICBONUS * CheckInventory("Perk_Medic");
+	if(CheckInventory("DnD_QuestReward_HealingIncrease25"))
+		bonus += DND_QUEST_MASTERHEALER_INCREASE;
+	if(CheckInventory("DnD_QuestReward_HealingAndCapIncrease"))
+		bonus += DND_QUEST_SKINOTEETH_INCREASE;
+	return bonus;
+}
+
 int CalculateHealthCapBonuses() {
 	// consider quest bonuses
 	int res = 0;
@@ -402,11 +461,17 @@ int GetSpawnHealth() {
 	int res = CalculateHealthCapBonuses() + DND_BASE_HEALTH + DND_VIT_INCREASE * CheckInventory("PSTAT_Vitality");
 	// consider percent bonuses
 	res += (res * (Player_Bonuses[PlayerNumber()].fortitude_orb_bonus) + DND_TORRASQUE_BOOST * CheckInventory("DnD_QuestReward_TorrasqueBonus")) / 100;
+	res += (res * CheckInventory("CelestialCheck") * CELESTIAL_BOOST) / 100;
+	
 	if(IsAccessoryEquipped(ActivatorTID(), DND_ACCESSORY_ANGELICANKH))
 		res >>= 1;
 	if(res < DND_BASE_HEALTH)
 		res = DND_BASE_HEALTH;
 	return res;
+}
+
+int GetMissingHealth() {
+	return GetSpawnHealth() - GetActorProperty(0, APROP_HEALTH);
 }
 
 int CalculateArmorCapBonuses() {
@@ -421,44 +486,53 @@ int CalculateArmorCapBonuses() {
 // used for displaying to hud
 int GetArmorCap() {
 	int res = CalculateArmorCapBonuses() + DND_BASE_ARMOR + DND_ARMOR_PER_STR * CheckInventory("PSTAT_Strength");
-	res += (res * (Player_Bonuses[PlayerNumber()].fortitude_orb_bonus) + DND_TORRASQUE_BOOST * CheckInventory("DnD_QuestReward_TorrasqueBonus")) / 100;
+	res += res * (Player_Bonuses[PlayerNumber()].fortitude_orb_bonus + DND_TORRASQUE_BOOST * CheckInventory("DnD_QuestReward_TorrasqueBonus")) / 100;
+	res += (res * CheckInventory("CelestialCheck") * CELESTIAL_BOOST) / 100;
 	return res;
 }
 
 // used for deciding armor pickup values
 int GetArmorSpecificCap(int amt) {
-	if(amt != 1) { // exception for armor bonus
+	if(amt != 1) { // any other armor besides the armor bonuses
 		amt += CalculateArmorCapBonuses() + DND_ARMOR_PER_STR * CheckInventory("PSTAT_Strength");
-		amt += (amt * Player_Bonuses[PlayerNumber()].fortitude_orb_bonus) / 100;
+		amt += amt * (Player_Bonuses[PlayerNumber()].fortitude_orb_bonus + DND_TORRASQUE_BOOST * CheckInventory("DnD_QuestReward_TorrasqueBonus")) / 100;
+		amt += (amt * CheckInventory("CelestialCheck") * CELESTIAL_BOOST) / 100;
 	}
-	else
-		amt = GetArmorCap();
+	else // exception for armor bonus
+		amt = GetArmorCap() >> 1;
 	return amt;
 }
 
 // compare armor types t1 and t2, check if t1 is of higher tier than t2
-// tier only matters for armors green to red, rest from menu replace whatever you have either way
+// if base armor of item greater and it is listed greater
 int IsArmorTierHigher(int t1, int t2) {
-	return ArmorBaseAmounts[t1] > ArmorBaseAmounts[t2];
+	return ArmorBaseAmounts[t1] > ArmorBaseAmounts[t2] && t1 > t2;
 }
 
-void HandleArmorPickup(int armor_type, int amount) {
+void HandleArmorPickup(int armor_type, int amount, bool replace) {
 	int armor = CheckInventory("Armor"), cap = 0;
+	GiveInventory("DnD_BoughtArmor", 1);
 	if(armor_type == DND_ARMOR_BONUS) {
 		// if we had no armor
 		if(!armor) {
 			SetInventory("DnD_ArmorType", armor_type + 1);
-			cap = GetArmorCap();
+			cap = GetArmorCap() >> 1;
 		}
-		else
-			cap = GetArmorSpecificCap(ArmorBaseAmounts[CheckInventory("DnD_ArmorType") - 1]) << 1;
+		else {
+			cap = GetArmorSpecificCap(ArmorBaseAmounts[CheckInventory("DnD_ArmorType") - 1]);
+		}
 		// just add 1 to current armor if meets requirements
-		if(CheckInventory("Armor") < cap)
-			GiveInventory("DnD_ArmorBonus", 1);
+		amount = amount * cap / 100;
+		// allow it to fill up to x3 of the armor cap
+		cap *= 3;
+		if(armor + amount < cap)
+			GiveInventory("DnD_ArmorBonus", amount);
+		else
+			GiveInventory("DnD_ArmorBonus", cap - armor);
 	}
 	else {
 		// only give the actual armor if my tier is higher!
-		if(IsArmorTierHigher(armor_type, CheckInventory("DnD_ArmorType") - 1)) {
+		if(IsArmorTierHigher(armor_type, CheckInventory("DnD_ArmorType") - 1) || replace) {
 			// gross hacks
 			SetInventory("Armor", 0);
 			GiveInventory(ArmorTypes[armor_type], 1);
@@ -479,6 +553,12 @@ void HandleArmorPickup(int armor_type, int amount) {
 		else
 			GiveInventory("DnD_ArmorBonus", amount);
 	}
+	
+	// check for thick skin quest
+	if(active_quest_id == QUEST_NOARMORS && !CheckInventory(Quest_Checkers[active_quest_id])) {
+		GiveInventory(Quest_Checkers[active_quest_id], 1);
+		FailQuest(ActivatorTID(), active_quest_id);
+	}
 }
 
 int Calculate_Stats() {
@@ -496,11 +576,13 @@ int Calculate_Perks() {
 }
 
 int GetDropChance(int pnum, bool isElite) {
-	int base = Player_Bonuses[pnum].drop_chance + DND_LUCK_GAIN * CheckActorInventory(pnum + P_TIDSTART, "Perk_Luck");
-	if(isElite) {
-		if(CheckActorInventory(pnum + P_TIDSTART, "DnD_QuestReward_EliteDropBonus"))
+	int base = 1.0; // base val
+	base += Player_Bonuses[pnum].drop_chance; // additive bonuses first
+	if(isElite && CheckActorInventory(pnum + P_TIDSTART, "DnD_QuestReward_EliteDropBonus")) {
 			base += DND_ELITEDROP_GAIN;
 	}
+	// luck benefits are multiplicative
+	base = FixedMul(base, 1.0 + DND_LUCK_GAIN * CheckActorInventory(pnum + P_TIDSTART, "Perk_Luck"));
 	return base;
 }
 
@@ -509,7 +591,7 @@ bool RunDefaultDropChance(int pnum, bool isElite, int basechance) {
 }
 
 bool RunDropChance(int pnum, bool isElite, int basechance, int low, int high) {
-	return GetDropChance(pnum, isElite) + basechance >= random(low, high);
+	return FixedMul(GetDropChance(pnum, isElite), basechance) >= random(low, high);
 }
 
 void DecideAccessories() {
@@ -589,6 +671,7 @@ void DecideAccessories() {
 		GiveInventory("CurseImmunity", 1);
 		GiveInventory("GryphonCheck", 1);
 		GiveInventory("GryphonSpeed", 1);
+		UpdatePlayerKnockbackResist();
 	}
 	else {
 		TakeInventory("CurseImmunity", 1);
@@ -619,6 +702,17 @@ void DecideAccessories() {
 		TakeInventory("ElementPower_Lightning", 1);
 		TakeInventory("ElementPower_Earth", 1);
 	}
+	if(IsAccessoryEquipped(this, DND_ACCESSORY_CELESTIAL)) {
+		SetInventory("CelestialCheck", 1);
+		GiveInventory("CelestialSlow", 1);
+	}
+	else {
+		SetInventory("CelestialCheck", 0);
+		TakeInventory("CelestialSlow", 1);
+	}
+	
+	SetInventory("HunterTalismanCheck", IsAccessoryEquipped(this, DND_ACCESSORY_HUNTERTALISMAN));
+	SetInventory("VeilCheck", IsAccessoryEquipped(this, DND_ACCESSORY_VEIL));
 }
 
 bool HasNoSigilPower() {
@@ -658,6 +752,16 @@ void UpdatePerkStuff() {
 		TakeInventory(StrParam(s:"Resist_Perk_", d:(CheckInventory("Perk_Endurance") - 1) * 5), 1);
 	RestoreRPGStat(RES_PERK_SHARP | RES_PERK_ENDURANCE);
 	SetAmmoCapacity("StoredMedkit", GetAmmoCapacity("StoredMedkit") + 15 * CheckInventory("Perk_Medic"));
+}
+
+void UpdatePlayerKnockbackResist() {
+	int bul = CheckInventory("PSTAT_Bulkiness");
+	int strgth = CheckInventory("PSTAT_Strength");
+	
+	if(IsAccessoryEquipped(0, DND_ACCESSORY_GRYPHONBOOTS))
+		SetActorProperty(0, APROP_MASS, INT_MAX);
+	else
+		SetActorProperty(0, APROP_MASS, DND_BASE_PLAYER_MASS + bul * DND_BUL_KNOCKBACK_GAIN + strgth * DND_STR_KNOCKBACK_GAIN);
 }
 
 enum {

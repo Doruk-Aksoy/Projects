@@ -1,8 +1,7 @@
 #ifndef DND_COMMON_IN
 #define DND_COMMON_IN
 
-#define DND_AFTER50_INCREMENT 25
-#define DND_AFTER50_INCREMENT_F 0.25
+#define DND_AFTER50_INCREMENT_DAMAGE 0.33
 
 #define MAXLEVELS 100
 #define DND_MAX_MONSTERLVL MAXLEVELS
@@ -16,6 +15,10 @@
 #define DND_BASE_HEALTH 100
 
 #define DND_DROP_TID 343 // some dumb number
+
+#define ZEALOT_BASE_TID 14000
+#define AVATAR_BASE_TID 5000
+#define PURP_DEM_TID 13000
 
 /*
 ////////////////
@@ -34,11 +37,17 @@
 10. 15000+ = Zealot Shield TID
 11. 17000 - 19048 = Shared item IDs
 12. 19049 - 29049 = Limited Respawn Ammos
-13. 32768 = Special FX TID
-14. 32769 = Thunder Staff temporary damager tid
-15. 40000 - 42048 = Thunder Staff Ring tid
-16. Anything above 66000 => any monster tid
+13. 29050 - 29150 = Charm drops on field
+14. 32768 = Special FX TID
+15. 32769 = Thunder Staff temporary damager tid
+16. 40000 - 42048 = Thunder Staff Ring tid
+17. 42049 - Talisman Mark tid
+18. Anything above 66000 => any monster tid
 */
+
+int AvatarTID = 0;
+int PurpDemTID = 0;
+int ZealotTID = 0;
 
 global int 0: MapChanged;
 global int 5: HardcoreSet;
@@ -234,11 +243,28 @@ int ftrunc(int x) {
 	return (x + 0.05) & 0xFFFFF000;
 }
 
-void SpawnDrop(str actor, int zoffset, int thrust) {
+void SpawnDrop(str actor, int zoffset, int thrust, int setspecial) {
 	SpawnForced(actor, GetActorX(0), GetActorY(0), GetActorZ(0) + zoffset, DND_DROP_TID);
 	ThrustThing(random(0, 255), random(2, 5), 0, DND_DROP_TID);
 	ThrustThingZ(DND_DROP_TID, thrust, 0, 0);
+	SetActorProperty(DND_DROP_TID, APROP_MASS, setspecial);
 	Thing_ChangeTID(DND_DROP_TID, 0);
+}
+
+// put here because acs doesnt recognize the below 3 variables have changed
+// general TID assigner
+Script 964 (int which) {
+	switch (which) {
+		case 0:
+			Thing_ChangeTID(0, AVATAR_BASE_TID + (AvatarTID++));
+		break;
+		case 1:
+			Thing_ChangeTID(0, PURP_DEM_TID + (PurpDemTID++));
+		break;
+		case 2:
+			Thing_ChangeTID(0, ZEALOT_BASE_TID + (ZealotTID++));
+		break;
+	}
 }
 
 #endif

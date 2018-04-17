@@ -1,0 +1,59 @@
+#library "DND_INTR"
+#include "zcommon.h"
+
+#include "DnD_Common.h"
+#include "DnD_Stat.h"
+
+#define DND_INTERMISSION_DURATION 10
+
+str GetIntermissionSong() {
+    return StrParam(s:"INTER", d:random(1, 4));
+}
+
+str GetNextLevel(bool isSecret) {
+	int lvlnum = GetLevelInfo(LEVELINFO_LEVELNUM), i;
+	str mapname = StrParam(n:PRINTNAME_LEVEL);
+	for(i = StrLen(mapname) - 1; i > 0; --i)
+		if(!IsDigit(GetChar(mapname, i)))
+			break;
+	if(lvlnum < 9)
+		return StrParam(s:StrLeft(mapname, i + 1), s:"0", d:lvlnum + 1);
+	return StrParam(s:StrLeft(mapname, i + 1), d:lvlnum + 1); 
+}
+
+Script "DnD Intermission Draw" (void) CLIENTSIDE {
+	if(ConsolePlayerNumber() != PlayerNumber())
+		Terminate;
+	SetHudSize(640, 480, 1);
+	SetFont("INTERBAK");
+	HudMessageBold(s:"A"; HUDMSG_PLAIN, 99, CR_WHITE, 320.4, 0.1, 0.0, 0.0);
+	SetFont("INTERPIC");
+	HudMessageBold(s:"A"; HUDMSG_PLAIN, 98, CR_WHITE, 320.4, 0.1, 0.0, 0.0);
+	SetFont("INTERFONT");
+	HudMessageBold(n:PRINTNAME_LEVEL, s:": \c[INT]", n:PRINTNAME_LEVELNAME, s:"\c-"; HUDMSG_PLAIN, 97, CR_GRAY, 320.4, 20.1, 0.0, 0.0);
+	HudMessageBold(s:"\c[I7]FINISHED\c-"; HUDMSG_PLAIN, 96, CR_WHITE, 320.4, 40.1, 0.0, 0.0);
+	SetFont("SMALLFONT");
+	SetPlayerProperty(1, 1, PROP_TOTALLYFROZEN);
+	for(int i = 0, j = 0; i < MAXPLAYERS; ++i) {
+		if(PlayerInGame(i)) {
+			SetActorProperty(i + P_TIDSTART, APROP_INVULNERABLE, 1);
+			if(ConsolePlayerNumber() == i)
+				HudMessageBold(d:j + 1, s:". ", n:i, s:" (", d:GetActorStat(i + P_TIDSTART, STAT_LVL), s:")        123"; HUDMSG_PLAIN, 1 + i, CR_GREEN, 20.1, 60.1 + j * 20.0, 0.0, 0.0);
+			else
+				HudMessageBold(d:j + 1, s:". ", n:i, s:" (", d:GetActorStat(i + P_TIDSTART, STAT_LVL), s:")        123"; HUDMSG_PLAIN, 1 + i, CR_WHITE, 20.1, 60.1 + j * 20.0, 0.0, 0.0);
+			++j;
+		}
+	}
+}
+
+Script 1003 (int isSecret) {
+	if(GetGameModeState() == GAMESTATE_COUNTDOWN) {
+		Thing_Damage(0, 0x7FFFFFFF, MOD_EXIT);
+		Terminate;
+	}
+	SetMusic(GetIntermissionSong());
+	ACS_NamedExecuteAlways("DND Intermission Draw", 0);
+	printbold(s:GetNextLevel(isSecret));
+	Delay(TICRATE * DND_INTERMISSION_DURATION);
+	ChangeLevel(GetNextLevel(isSecret), 0, CHANGELEVEL_NOINTERMISSION | CHANGELEVEL_PRERAISEWEAPON);
+}
